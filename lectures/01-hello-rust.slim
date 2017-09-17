@@ -1,0 +1,124 @@
+= slide 'Hello, world!' do
+  p Защото винаги оттам се почва:
+
+  example:
+    fn main() {
+        println!("Hello, world!");
+    }
+
+  pre.action
+    ' $ rustc hello.rs
+      $ ./hello
+      Hello, world!
+
+= slide 'Няма ли и по-лесен начин?', '(има, разбира се)' do
+
+  pre
+    ' $ cargo new hello --bin
+      $ cargo run
+      Hello, world!
+
+= slide 'Cargo' do
+  list:
+    Package manager
+    Task runner
+    Подобно на <strong>mix</strong> в еликсир
+    Подобно на <strong>bundler</strong> в руби
+
+= slide 'Rustc' do
+  list:
+    Удобно за временни файлове, бързи експерименти
+    Ненужно за повечето цели
+
+= slide 'Cargo' do
+  em (demo)
+
+= slide 'Cargo-foobar' do
+  list:
+    Скрипт, който се казва <code>cargo-нещоси</code>, в пътя
+    <code>cargo нещоси</code>
+    <code>cargo twitter</code>
+    <code>cargo fmi</code>
+
+= slide 'Инсталация' do
+  list:
+    Rustup ([https://www.rustup.rs/](https://www.rustup.rs/))
+    <code>$ rustup install stable</code>
+    <code>$ rustup doc</code>
+
+= slide 'The Rust Book' do
+  p
+    a href="https://doc.rust-lang.org/book/second-edition/"
+      ' https://doc.rust-lang.org/book/second-edition/
+
+= slide 'Rust playpen' do
+  p
+    a href="https://play.rust-lang.org/"
+      ' https://play.rust-lang.org/
+
+= slide 'Основни типове', 'Числа' do
+  list:
+    <code>i32</code>, <code>u32</code>
+    <code>i64</code>, <code>u64</code>
+    <code>i8</code>, <code>u8</code>
+    <code>isize</code>, <strong><code>usize</code></strong>
+    <strong>Няма</strong> <code>int</code> и <code>unsigned int</code>
+    Типа <code>u8</code> и типа <code>char</code> са напълно различни
+
+= slide 'Основни типове', 'Числа (литерали)' do
+  list:
+    Цяло число: <code>42</code>
+    Специфичен тип: <code>42u32</code>
+    Големи числа: <code>133_587</code>
+    <code>42_u32</code>
+    <code>1_0_0_0</code>
+    <code>1_____________________________________________________4</code>
+
+= slide 'Основни типове', 'Числа (в различни бройни системи)' do
+  list:
+    Hex: <code>0xDEADBEEF</code>
+    Octal: <code>0o77</code>
+    Binary: <code>0b1010011010</code>
+    Byte: <code>b'A'</code>
+
+= slide 'Основни типове', 'Числа (с плаваща запетая)' do
+  list:
+    <code>f32</code> ("float")
+    <code>f64</code> ("double")
+    <code>3.14</code>
+    <code>3.14_f64</code>
+
+= slide 'Променливи' do
+
+  example:
+    let pi: f64 = 3.14;
+
+= slide 'No emoji' do
+  p https://twitter.com/sgrif/status/839214027117105152 (TODO embed image)
+
+= slide 'Конвертиране между типове', '(type casting)' do
+  ' TODO
+
+= slide 'Операции с числа', 'аритметика' do
+  ' TODO
+
+= slide 'Операции с числа', 'сравнения' do
+  ' TODO
+
+= slide 'Основни типове', 'bool' do
+  ' TODO
+
+= slide 'Control flow', 'if-клаузи' do
+  ' TODO
+
+= slide 'Control flow', 'цикли' do
+  ' TODO
+
+= slide 'Функции' do
+  ' TODO
+
+= slide 'Коментари' do
+  ' TODO
+
+= slide 'Първо предизвикателство' do
+  ' TODO функция, която смята числа на фибоначи

@@ -1,4 +1,9 @@
-1:
-  title: 01. Въведение в Rust
+0:
+  title: 00. За курса
   date: 2017-10-04
-  slug: 01-intro
+  slug: 00-intro
+
+1:
+  title: 01. Здравей, Rust
+  date: 2017-10-04
+  slug: 01-hello-rust
