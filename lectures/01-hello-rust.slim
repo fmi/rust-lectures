@@ -42,6 +42,7 @@
 
 = slide 'Инсталация' do
   list:
+    TODO тема във форумите с доста повече детайли
     Rustup ([https://www.rustup.rs/](https://www.rustup.rs/))
     <code>$ rustup install stable</code>
     <code>$ rustup doc</code>
@@ -55,6 +56,9 @@
   p
     a href="https://play.rust-lang.org/"
       ' https://play.rust-lang.org/
+
+= slide 'Първи шанс за точки' do
+  p Инсталирайте си rust! TODO topic link
 
 = slide 'Основни типове', 'Числа' do
   list:
@@ -86,18 +90,37 @@
     <code>f32</code> ("float")
     <code>f64</code> ("double")
     <code>3.14</code>
-    <code>3.14_f64</code>
+    <code>3.14_f32</code>
 
 = slide 'Променливи' do
-
   example:
-    let pi: f64 = 3.14;
+    let pi = 3.14_f32;
+    let pi: f32 = 3.14;
+    let pi = 3.14; // f64
+
+= slide 'Променливи' do
+  example:
+    let pi: f32 = 3.14;
+    let ИМЕ: ТИП = СТОЙНОСТ;
+
+    let pi = 3.14;
+    let ИМЕ = СТОЙНОСТ;
 
 = slide 'No emoji' do
-  p https://twitter.com/sgrif/status/839214027117105152 (TODO embed image)
+  img src="images/no_emoji.png"
 
 = slide 'Конвертиране между типове', '(type casting)' do
-  ' TODO
+  example:
+    let x = 42_u32 as u64;             // => 42
+    let x = 42_u64 as u32;             // => 42
+
+    let x = 0b00000010_00000001;       // => 513
+    let x = 0b00000010_00000001 as u8; // => 1
+
+    let y = -15;
+    let x = y as u32;                  // => 4294967281
+
+    let x = 3.14 as u32;               // => 3
 
 = slide 'Операции с числа', 'аритметика' do
   ' TODO
@@ -116,6 +139,11 @@
 
 = slide 'Функции' do
   ' TODO
+
+= slide 'Mutability', '"променяемост"' do
+  example:
+    let mut pi = 3.14;
+  ' (demo)
 
 = slide 'Коментари' do
   ' TODO
