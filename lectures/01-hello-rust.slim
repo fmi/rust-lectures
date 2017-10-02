@@ -33,6 +33,7 @@
 
 = slide 'Инсталация' do
   list:
+    TODO тема във форумите с доста повече детайли
     Rustup ([https://www.rustup.rs/](https://www.rustup.rs/))
     <code>$ rustup install stable</code>
     <code>$ rustup doc</code>
@@ -46,6 +47,9 @@
   p
     a href="https://play.rust-lang.org/"
       ' https://play.rust-lang.org/
+
+= slide 'Първи шанс за точки' do
+  p Инсталирайте си rust! TODO topic link
 
 = slide 'Основни типове', 'Числа' do
   ' <table>
@@ -169,8 +173,6 @@
     let x = 5, y = 3;   // грешка
 
 = slide 'No emoji' do
-  p https://twitter.com/sgrif/status/839214027117105152 (TODO embed image)
-
   example:
     fn main() {
       let 😀 = 123;
@@ -185,6 +187,9 @@
         |       ^
 
       error: Could not compile `playground`.
+
+= slide 'No emoji' do
+  img src="images/no_emoji.png"
 
 = slide 'Коментари' do
   p Едноредов коментар
@@ -306,6 +311,7 @@
 
   p.action <code>'outer</code> и <code>'inner</code> се наричат етикети (labels)
 
+
 = slide 'Функции' do
   example:
     fn main() {
@@ -381,6 +387,3 @@
     let x = 5;
     let y = 10;
     println!("x = {} and y = {}", x, y);
-
-= slide 'Първо предизвикателство' do
-  ' TODO функция, която смята числа на фибоначи
