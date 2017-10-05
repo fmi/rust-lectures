@@ -203,8 +203,9 @@
 
   example:
     /*
-      Hello
-      world
+      So we’re doing something complicated here, long enough that we need
+      multiple lines of comments to do it! Whew! Hopefully, this comment will
+      explain what’s going on.
     */
 
 = slide 'Конвертиране между типове', '(type casting)' do
@@ -241,7 +242,7 @@
 
   example:
     let x = 255_u8;
-    let x = x + 1;                // 💥
+    let y = x + 1;                // 💥
 
 = slide 'Операции с числа', 'акумулативни операции' do
   example:
@@ -278,27 +279,38 @@
       // твърдения или изрази
     }
 
+= slide 'Control flow', 'if-клаузи' do
+  example:
+    if 2 > 1 {
+      // твърдения или изрази
+    } else if 5 != 2 {
+      // твърдения или изрази
+    } else {
+      // твърдения или изрази
+    }
+
 = slide 'Control flow', 'цикли' do
-  list:
-    for in
-    работи с итератори
-
-  list:
-    while
-
   example:
     while bool_expression {
       // твърдения или изрази
     }
 
-  list:
-    loop
-    Същото като <code>while true</code>, но по-четимо
-
   example:
     loop {
       // твърдения или изрази
     }
+
+  list:
+    <code>loop</code> e същото като <code>while true</code>, но по-четимо
+    <code>for in</code> работи с итератори
+
+= slide 'Control flow', 'цикли' do
+  example:
+    let x = loop {
+      break 5;
+    };
+
+  p <code>loop</code> е израз
 
 = slide 'Control flow', 'Именувани цикли' do
   example:
@@ -310,7 +322,6 @@
     }
 
   p.action <code>'outer</code> и <code>'inner</code> се наричат етикети (labels)
-
 
 = slide 'Функции' do
   example:
@@ -341,23 +352,22 @@
     Ако искаме да излезем от функцията преди последния ред, може да използваме <code>return</code>
     Използване на <code>return</code> на последния ред от тялото на функция се счита за лоша практика
 
-= slide 'Statements & Expressions' do
-  p.action Израз (expression)
+= slide 'Statements & Expressions', 'Твърдение (statement)'do
+  example:
+    let x = (let y = 10);   // грешка
+
+  list:
+    няма стойност
+    <code>let x = 10;</code>
+    <code>return 25;</code>
+
+= slide 'Statements & Expressions', 'Израз (expression)'do
   list:
     операция която връща резултат
     <code>1</code>
     <code>(2 + 3) * 4</code>
     <code>add(5, 6)</code>
     може да се присвои на променлива чрез <code>let</code>
-
-  p.action Твърдение (TODO: коректен ли е преводът?) (statement)
-  list:
-    няма резултат
-    <code>let x = 10;</code>
-    <code>return 25;</code>
-
-  example:
-    let x = (let y = 10);   // грешка
 
 = slide 'Statements & Expressions' do
   p if-else конструкцията е израз (expression)
@@ -371,6 +381,9 @@
 
   p Rust няма тернарен оператор по тази причина
 
+  example:
+    let x = if true { 5 } else { 3 };
+
 = slide 'Macros' do
   list:
     генериране на код
@@ -379,11 +392,11 @@
     <code>print!</code>
 
 = slide 'println! macro' do
-  list:
-    Принтиране на конзолата
-    <code>{}</code> placeholders
-
   example:
     let x = 5;
     let y = 10;
     println!("x = {} and y = {}", x, y);
+
+  list:
+    Принтиране на конзолата
+    <code>{}</code> placeholders
