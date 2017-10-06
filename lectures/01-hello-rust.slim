@@ -149,7 +149,7 @@
     <code>false</code>
     Големина 1 байт
 
-= slide 'Основни типове', '()' do
+= slide 'Основни типове', 'unit' do
   table
     thead
       tr
@@ -260,12 +260,12 @@
 
 = slide 'Операции с числа', 'сравнения' do
   example:
-    2   >   1;
-    x   <   95;
-    3   >=  3;
-    -10 <=  1;
-    a   ==  a;
-    5   !=  1000;
+    2   >   1
+    x   <   95
+    3   >=  3
+    -10 <=  1
+    a   ==  a
+    5   !=  1000
 
   p Всички оператори за сравнение връщат резултат от тип <code>bool</code>.
 
@@ -303,14 +303,6 @@
   list:
     <code>loop</code> e същото като <code>while true</code>, но по-четимо
     <code>for in</code> работи с итератори
-
-= slide 'Control flow', 'цикли' do
-  example:
-    let x = loop {
-      break 5;
-    };
-
-  p <code>loop</code> е израз
 
 = slide 'Control flow', 'Именувани цикли' do
   example:
@@ -383,6 +375,14 @@
 
   example:
     let x = if true { 5 } else { 3 };
+
+= slide 'Statements & Expressions' do
+  example:
+    let x = loop {
+      break 5;
+    };
+
+  p <code>loop</code> е израз
 
 = slide 'Macros' do
   list:
