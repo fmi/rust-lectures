@@ -173,6 +173,25 @@
   example:
     let x = 5, y = 3;   // грешка
 
+= slide 'No emoji' do
+  example:
+    fn main() {
+        let 😀 = 123;
+        println!("{:?}", 😀);
+    }
+
+  pre
+    ' error: unknown start of token: \u{1f600}
+      --> src/main.rs:2:7
+        |
+      2 |   let 😀 = 123;
+        |       ^
+
+      error: Could not compile `playground`.
+
+= slide 'No emoji' do
+  img src="images/no_emoji.png"
+
 = slide 'Променливи', 'shadowing' do
   example:
     let x = 10;
@@ -213,25 +232,6 @@
   list:
     immutable по подразбиране
     ключова дума <code>mut</code>
-
-= slide 'No emoji' do
-  example:
-    fn main() {
-        let 😀 = 123;
-        println!("{:?}", 😀);
-    }
-
-  pre
-    ' error: unknown start of token: \u{1f600}
-      --> src/main.rs:2:7
-        |
-      2 |   let 😀 = 123;
-        |       ^
-
-      error: Could not compile `playground`.
-
-= slide 'No emoji' do
-  img src="images/no_emoji.png"
 
 = slide 'Коментари' do
   p Едноредов коментар
