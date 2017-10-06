@@ -146,6 +146,10 @@
     <code>false</code>
     Големина 1 байт
 
+  list:
+    Оператори <code>&&</code>, <code>||</code>, <code>&</code>, <code>|</code>, <code>^</code>, <code>!</code>
+    <code>&&</code> и <code>||</code> са мързеливи
+
 = slide 'Основни типове', 'unit' do
   table
     thead
@@ -169,11 +173,52 @@
   example:
     let x = 5, y = 3;   // грешка
 
+= slide 'Променливи', 'shadowing' do
+  example:
+    let x = 10;
+    let x = x + 10;
+    let x = x * 3;
+
+    // the rest of the code
+
+= slide 'Променливи', 'shadowing' do
+  example:
+    let x1 = 10;
+    let x2 = x1 + 10;
+    let x3 = x2 * 3;
+
+    // the rest of the code
+
+= slide 'Променливи', 'shadowing' do
+  example:
+    let x = 10;
+    {
+        let x = x + 10;
+        {
+           let x = x * 3;
+
+           // the rest of the code
+        }
+    }
+
+= slide 'Променливи', 'mutability' do
+  example:
+    let x = 5;
+    x += 1;     // грешка
+
+  example:
+    let mut x = 5;
+    x += 1;
+
+  list:
+    immutable по подразбиране
+    ключова дума <code>mut</code>
+
 = slide 'No emoji' do
   example:
     fn main() {
-      let 😀 = 123;
-      println!("{:?}", 😀);
+        let 😀 = 123;
+        println!("{:?}", 😀);
     }
 
   pre
@@ -266,35 +311,46 @@
 
   p Всички оператори за сравнение връщат резултат от тип <code>bool</code>.
 
+= slide 'Операции с числа', 'побитови операции' do
+  example:
+    0b0010   &   0b0001
+    x        |     0x5F
+    0b0011   ^   0b1001
+    0b0001   <<       3
+    0b1000   >>       2
+    !x
+
+  p Операторът за побитово отрицание е <code>!</code>
+
 = slide 'Control flow', 'if-клаузи' do
   example:
     if bool_expression {
-      // твърдения или изрази
+        // твърдения или изрази
     } else if another_bool_expression {
-      // твърдения или изрази
+        // твърдения или изрази
     } else {
-      // твърдения или изрази
+        // твърдения или изрази
     }
 
 = slide 'Control flow', 'if-клаузи' do
   example:
     if 2 > 1 {
-      // твърдения или изрази
+        // твърдения или изрази
     } else if 5 != 2 {
-      // твърдения или изрази
+        // твърдения или изрази
     } else {
-      // твърдения или изрази
+        // твърдения или изрази
     }
 
 = slide 'Control flow', 'цикли' do
   example:
     while bool_expression {
-      // твърдения или изрази
+        // твърдения или изрази
     }
 
   example:
     loop {
-      // твърдения или изрази
+        // твърдения или изрази
     }
 
   list:
@@ -326,13 +382,13 @@
 = slide 'Функции' do
   example:
     fn name(param1: Type1, param2: Type2) -> ResultType {
-      // тяло
+        // тяло
     }
 
   example:
     fn add(a: u32, b: u32) -> u32 {
-      // note no semicolon
-      a + b
+        // note no semicolon
+        a + b
     }
 
   list:
@@ -363,9 +419,9 @@
 
   example:
     let x = if true {
-      5
+        5
     } else {
-      3
+        3
     };
 
   p Rust няма тернарен оператор по тази причина
@@ -376,7 +432,7 @@
 = slide 'Statements & Expressions' do
   example:
     let x = loop {
-      break 5;
+        break 5;
     };
 
   p <code>loop</code> е израз
