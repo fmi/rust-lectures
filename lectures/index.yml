@@ -1,7 +1,7 @@
 0:
   title: 00. За курса
   date: 2017-10-04
-  slug: 00-intro
+  url: https://speakerdeck.com/andrewradev/programming-rust-at-fmi
 
 1:
   title: 01. Здравей, Rust
