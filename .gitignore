@@ -1,2 +1,3 @@
-compiled-lectures
+/compiled-lectures
+/vendor/bundle
 .bundle

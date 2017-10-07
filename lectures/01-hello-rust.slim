@@ -12,7 +12,6 @@
       Hello, world!
 
 = slide 'Няма ли и по-лесен начин?', '(има, разбира се)' do
-
   pre
     ' $ cargo new hello --bin
       $ cargo run
@@ -22,8 +21,7 @@
   list:
     Package manager
     Task runner
-    Подобно на <strong>mix</strong> в еликсир
-    Подобно на <strong>bundler</strong> в руби
+    Подобно на <strong>mix</strong> в elixir, <strong>bundler</strong> в ruby, <strong>npm</strong> в node.js
 
 = slide 'Rustc' do
   list:
@@ -33,16 +31,10 @@
 = slide 'Cargo' do
   em (demo)
 
-= slide 'Cargo-foobar' do
-  list:
-    Скрипт, който се казва <code>cargo-нещоси</code>, в пътя
-    <code>cargo нещоси</code>
-    <code>cargo twitter</code>
-    <code>cargo fmi</code>
-
 = slide 'Инсталация' do
   list:
-    Rustup ([https://www.rustup.rs/](https://www.rustup.rs/))
+    [https://fmi.rust-lang.bg/topics/1](https://fmi.rust-lang.bg/topics/1)
+    Rustup ([https://rustup.rs/](https://rustup.rs/))
     <code>$ rustup install stable</code>
     <code>$ rustup doc</code>
 
@@ -57,13 +49,60 @@
       ' https://play.rust-lang.org/
 
 = slide 'Основни типове', 'Числа' do
-  list:
-    <code>i32</code>, <code>u32</code>
-    <code>i64</code>, <code>u64</code>
-    <code>i8</code>, <code>u8</code>
-    <code>isize</code>, <strong><code>usize</code></strong>
-    <strong>Няма</strong> <code>int</code> и <code>unsigned int</code>
-    Типа <code>u8</code> и типа <code>char</code> са напълно различни
+  ' <table>
+      <thead>
+        <tr>
+          <th rowspan="2">Length</th>
+          <th colspan="2">Rust</th>
+          <th colspan="2">C/C++</th>
+        </tr>
+        <tr>
+          <th>Signed</th>
+          <th>Unsigned</th>
+          <th>Signed</th>
+          <th>Unsigned</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>8-bit</td>
+          <td><code>i8</code></td>
+          <td><code>u8</code></td>
+          <td><code>char</code></td>
+          <td><code>unsigned char</code></td>
+        </tr>
+        <tr>
+          <td>16-bit</td>
+          <td><code>i16</code></td>
+          <td><code>u16</code></td>
+          <td><code>short</code></td>
+          <td><code>unsigned short</code></td>
+        </tr>
+        <tr>
+          <td>32-bit</td>
+          <td><code>i32</code></td>
+          <td><code>u32</code></td>
+          <td><code>int</code></td>
+          <td><code>unsigned int</code></td>
+        </tr>
+        <tr>
+          <td>64-bit</td>
+          <td><code>i64</code></td>
+          <td><code>u64</code></td>
+          <td><code>long long</code></td>
+          <td><code>unsigned long long</code></td>
+        </tr>
+        <tr>
+          <td>arch</td>
+          <td><code>isize</code></td>
+          <td><code>usize</code></td>
+          <td><code>long</code></td>
+          <td><code>unsigned long</code> / <code>size_t</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+  p Типа <code>u8</code> и типа <code>char</code> са напълно различни!
 
 = slide 'Основни типове', 'Числа (литерали)' do
   list:
@@ -79,46 +118,338 @@
     Hex: <code>0xDEADBEEF</code>
     Octal: <code>0o77</code>
     Binary: <code>0b1010011010</code>
-    Byte: <code>b'A'</code>
 
 = slide 'Основни типове', 'Числа (с плаваща запетая)' do
+  table
+    thead
+      tr
+        th Length
+        th Rust
+        th C/C++
+    tbody
+      tr
+        td 32-bit
+        td <code>f32</code>
+        td <code>float</code>
+      tr
+        td 64-bit
+        td <code>f64</code>
+        td <code>double</code>
+
   list:
-    <code>f32</code> ("float")
-    <code>f64</code> ("double")
-    <code>3.14</code>
-    <code>3.14_f64</code>
-
-= slide 'Променливи' do
-
-  example:
-    let pi: f64 = 3.14;
-
-= slide 'No emoji' do
-  p https://twitter.com/sgrif/status/839214027117105152 (TODO embed image)
-
-= slide 'Конвертиране между типове', '(type casting)' do
-  ' TODO
-
-= slide 'Операции с числа', 'аритметика' do
-  ' TODO
-
-= slide 'Операции с числа', 'сравнения' do
-  ' TODO
+    <code>3.14</code> // f64
+    <code>3.14_f32</code> // f32
 
 = slide 'Основни типове', 'bool' do
-  ' TODO
+  list:
+    <code>true</code>
+    <code>false</code>
+    Големина 1 байт
 
-= slide 'Control flow', 'if-клаузи' do
-  ' TODO
+  list:
+    Оператори <code>&&</code>, <code>||</code>, <code>&</code>, <code>|</code>, <code>^</code>, <code>!</code>
+    <code>&&</code> и <code>||</code> са мързеливи
 
-= slide 'Control flow', 'цикли' do
-  ' TODO
+= slide 'Основни типове', 'unit' do
+  table
+    thead
+      tr
+        th Rust
+        th C/C++
+    tbody
+      tr
+        td <code>()</code>
+        td <code>void</code>
 
-= slide 'Функции' do
-  ' TODO
+= slide 'Променливи' do
+  example:
+    let pi: f64 = 3.14;
+    let pi      = 3.14;
+    let pi: f32 = 3.14;
+    let pi      = 3.14_f32;
+
+  p Не може да се декларират множество променливи с едно <code>let</code> твърдение
+
+  example:
+    let x = 5, y = 3;   // грешка
+
+= slide 'No emoji' do
+  example:
+    fn main() {
+        let 😀 = 123;
+        println!("{:?}", 😀);
+    }
+
+  pre
+    ' error: unknown start of token: \u{1f600}
+      --> src/main.rs:2:7
+        |
+      2 |   let 😀 = 123;
+        |       ^
+
+      error: Could not compile `playground`.
+
+= slide 'No emoji' do
+  img src="images/no_emoji.png"
+
+= slide 'Променливи', 'shadowing' do
+  example:
+    let x = 10;
+    let x = x + 10;
+    let x = x * 3;
+
+    // the rest of the code
+
+= slide 'Променливи', 'shadowing' do
+  example:
+    let x1 = 10;
+    let x2 = x1 + 10;
+    let x3 = x2 * 3;
+
+    // the rest of the code
+
+= slide 'Променливи', 'shadowing' do
+  example:
+    let x = 10;
+    {
+        let x = x + 10;
+        {
+           let x = x * 3;
+
+           // the rest of the code
+        }
+    }
+
+= slide 'Променливи', 'mutability' do
+  example:
+    let x = 5;
+    x += 1;     // грешка
+
+  example:
+    let mut x = 5;
+    x += 1;
+
+  list:
+    immutable по подразбиране
+    ключова дума <code>mut</code>
 
 = slide 'Коментари' do
-  ' TODO
+  p Едноредов коментар
 
-= slide 'Първо предизвикателство' do
-  ' TODO функция, която смята числа на фибоначи
+  example:
+    // So we’re doing something complicated here, long enough that we need
+    // multiple lines of comments to do it! Whew! Hopefully, this comment will
+    // explain what’s going on.
+
+  p Rust поддържа и блокови коментари <code>/* ... */</code>, но се предпочита използването на <code>//</code>
+
+  example:
+    /*
+      So we’re doing something complicated here, long enough that we need
+      multiple lines of comments to do it! Whew! Hopefully, this comment will
+      explain what’s going on.
+    */
+
+= slide 'Конвертиране между типове', '(type casting)' do
+  p Ключовата дума <code>as</code>.
+
+  example:
+    let one = true as u8;
+    let two_hundred = -56i8 as u8;
+    let three = 3.14 as u32;
+
+  p Конвертиране от по-голям тип към по-малък може да доведе до загуба на данни
+
+  example:
+    let x = 0b11111111_00000001_u16;
+    let y = x as u8;
+
+    println!("{}", y); // ??
+
+= slide 'Операции с числа', 'аритметика' do
+  example:
+    let sum = 5 + 10;             // събиране
+    let difference = 95.5 - 4.3;  // изваждане
+    let product = 4 * 30;         // умножение
+    let quotient = 56.7 / 32.2;   // делене
+    let remainder = 43 % 5;       // остатък
+
+  p Не може да прилагаме аритметичните операции върху числа от различни типове
+
+  example:
+    let x = 4_u32 - 1_u8;         // грешка
+    let y = 1.2_f64 / 0.8_f32;    // грешка
+
+  p Aритметични операции хвърлят грешка при препълванe (integer overflow / underflow)
+
+  example:
+    let x = 255_u8;
+    let y = x + 1;                // 💥
+
+= slide 'Операции с числа', 'акумулативни операции' do
+  example:
+    sum += 100;
+    difference -= 4.0;
+    product *= 1;
+    quotient /= 1.2;
+    remainder %= 2;
+
+  p Няма оператори <code>++</code> и <code>--</code>
+
+  example:
+    x += 1;
+    x -= 1;
+
+= slide 'Операции с числа', 'сравнения' do
+  example:
+    2   >   1
+    x   <   95
+    3   >=  3
+    -10 <=  1
+    a   ==  a
+    5   !=  1000
+
+  p Всички оператори за сравнение връщат резултат от тип <code>bool</code>.
+
+= slide 'Операции с числа', 'побитови операции' do
+  example:
+    0b0010   &   0b0001
+    x        |     0x5F
+    0b0011   ^   0b1001
+    0b0001   <<       3
+    0b1000   >>       2
+    !x
+
+  p Операторът за побитово отрицание е <code>!</code>
+
+= slide 'Control flow', 'if-клаузи' do
+  example:
+    if bool_expression {
+        // твърдения или изрази
+    } else if another_bool_expression {
+        // твърдения или изрази
+    } else {
+        // твърдения или изрази
+    }
+
+= slide 'Control flow', 'if-клаузи' do
+  example:
+    if 2 > 1 {
+        // твърдения или изрази
+    } else if 5 != 2 {
+        // твърдения или изрази
+    } else {
+        // твърдения или изрази
+    }
+
+= slide 'Control flow', 'цикли' do
+  example:
+    while bool_expression {
+        // твърдения или изрази
+    }
+
+  example:
+    loop {
+        // твърдения или изрази
+    }
+
+  list:
+    <code>loop</code> e същото като <code>while true</code>, но по-четимо
+    <code>for in</code> работи с итератори
+
+= slide 'Control flow', 'Именувани цикли' do
+  example:
+    'outer: loop {
+        'inner: loop {
+            break 'outer;
+        }
+        println!("John Cena");
+    }
+
+  p.action <code>'outer</code> и <code>'inner</code> се наричат етикети (labels)
+
+= slide 'Функции' do
+  example:
+    fn main() {
+        println!("Hello, world!");
+        another_function();
+    }
+
+    fn another_function() {
+        println!("Another function.");
+    }
+
+= slide 'Функции' do
+  example:
+    fn name(param1: Type1, param2: Type2) -> ResultType {
+        // тяло
+    }
+
+  example:
+    fn add(a: u32, b: u32) -> u32 {
+        // note no semicolon
+        a + b
+    }
+
+  list:
+    Задаването на типове на параметрите и резултата е задължително (няма type inference)
+    Върнатана стойност е стойността на последния израз в тялото на функцията
+    Ако искаме да излезем от функцията преди последния ред, може да използваме <code>return</code>
+    Използване на <code>return</code> на последния ред от тялото на функция се счита за лоша практика
+
+= slide 'Statements & Expressions', 'Твърдение (statement)'do
+  example:
+    let x = (let y = 10);   // грешка
+
+  list:
+    няма стойност
+    <code>let x = 10;</code>
+    <code>return 25;</code>
+
+= slide 'Statements & Expressions', 'Израз (expression)'do
+  list:
+    операция която връща резултат
+    <code>1</code>
+    <code>(2 + 3) * 4</code>
+    <code>add(5, 6)</code>
+    може да се присвои на променлива чрез <code>let</code>
+
+= slide 'Statements & Expressions' do
+  p if-else конструкцията е израз (expression)
+
+  example:
+    let x = if true {
+        5
+    } else {
+        3
+    };
+
+  p Rust няма тернарен оператор по тази причина
+
+  example:
+    let x = if true { 5 } else { 3 };
+
+= slide 'Statements & Expressions' do
+  example:
+    let x = loop {
+        break 5;
+    };
+
+  p <code>loop</code> е израз
+
+= slide 'Macros' do
+  list:
+    генериране на код
+    различава се от функциите по <code>!</code> след името
+    <code>println!</code>
+    <code>print!</code>
+
+= slide 'println! macro' do
+  example:
+    let x = 5;
+    let y = 10;
+    println!("x = {} and y = {}", x, y);
+
+  list:
+    Принтиране на конзолата
+    <code>{}</code> placeholders
