@@ -1,7 +1,7 @@
 require 'rubygems'
 require 'slim'
 require 'yaml'
-require 'pygments'
+require 'rouge'
 require 'fileutils'
 require 'rcodetools/xmpfilter'
 
