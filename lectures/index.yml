@@ -7,3 +7,8 @@
   title: 01. Здравей, Rust
   date: 2017-10-06
   slug: 01-hello-rust
+
+2:
+  title: 02. Псевдоними, низове, композирани типове
+  date: 2017-10-11
+  slug: 02-references-strings-compound-types

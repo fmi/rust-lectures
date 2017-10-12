@@ -1,0 +1,476 @@
+= slide 'Административни неща' do
+  list:
+    Регистрирайте се в [https://fmi.rust-lang.bg](https://fmi.rust-lang.bg)!
+    Качете си снимка! (+1 точки)
+    Инсталирайте си Rust (+1 точки) [https://fmi.rust-lang.bg/topics/2](https://fmi.rust-lang.bg/topics/2)
+
+= slide 'Въпроси' do
+  example:
+    let x = 3;
+    let y = 5_i32;
+
+    x = x + y;
+
+    println!("{}", x);
+
+= slide 'Въпроси' do
+  example:
+    let x = 3;
+    let y = 5_i32;
+
+    let x = x + y;
+
+    println!("{}", x);
+
+= slide 'Въпроси' do
+  example:
+    let x = 3.14_f32 as u32;
+    let y = 5_i32;
+
+    let z = x + y;
+
+    println!("{}", z);
+
+= slide 'Въпроси' do
+  example:
+    let x = 3.14_f32 as u32;
+    let y = 5_i32;
+
+    let z = (x as u8) + (y as u8);
+
+    println!("{}", z);
+
+= slide 'Въпроси' do
+  example:
+    let x = 13;
+    let y =
+        if (x > 42) {
+            println("Бабо, много ти е голям хикса!");
+            x
+        } elsif x == 42 {
+            println("Знам всичко!");
+            x
+        } else {
+            x
+        };
+
+    let x = loop { break { y } };
+
+= slide 'Въпроси' do
+  example:
+    let x = 13;
+    let y = // Това е възможно
+        if x > 42 { // Няма кръгли скоби, 'къдравите' скоби са задължителни!
+            println!("Бабо, много ти е голям хикса!");
+            x
+        } else if x == 42 { // Няма elsif съкращения
+            println!("Знам всичко!"); // Macro!
+            x // Expression
+        } else {
+            x
+        };
+
+    let x = loop { break { 5 } }; // както и това
+
+= slide 'Преговор' do
+  list:
+    Инсталация и подкарване (`rustup`, `cargo`, Rust Playground)
+    Документация (The Rust Book, `rustup doc`)
+    Числа (битове, операции, конвертиране)
+    Променливи (отгатване на типове, скриване на променливи, мутация)
+    Коментари (!!!)
+    Control flow (`if`, `while`, `loop`)
+    Функции (`fn`, връщане на стойности)
+    Твърдения и изрази (точка-и-запетаи!)
+    Печатане на низове (`println!("x = {}", x)`)
+
+= slide 'Основни типове', 'Кортежи' do
+
+  example:
+    let x: (u32, bool) = (42, true);
+
+    println!("{}", x.0); // 42
+    println!("{}", x.1); // true
+
+= slide 'Основни типове', 'Кортежи' do
+
+  example:
+    let (x, y) = (4, 5);
+
+    println!("{}", x); // 4
+    println!("{}", y); // 5
+
+= slide 'Tuple', 'Функция връщаща много стойности' do
+
+  example:
+
+    fn multi(x: i32, y: i32) -> (i32, i32, i32) {
+        (x * y, x + y, x - y)
+    }
+
+    let (a, b, c) = multi(4, 5);
+    let (d, e, _) = multi(4, 5); // Игнориране
+    let (_, f, _) = multi(4, 5); // Игнориране
+
+    let (a, b, c): (i32, i32, i32) = multi(4, 5);
+
+= slide 'Stack & Heap', 'Стек (Stack)' do
+  img src="images/stack-of-dirty-dishes.jpg"
+
+= slide 'Stack & Heap', 'Стек (Stack)' do
+  list:
+    LIFO (last in, first out)
+    Може да работим само с най-горния елемент чрез push и pop
+    Данни с фиксирана дължина
+    При извикване на функция, аргументите и локалните променливи се push-ват на стека и pop-ват при return (stack frame)
+    Стекът е фиксиран и при прехвърляне получаваме stack overflow.
+
+= slide 'Stack & Heap', 'Стек (Stack)' do
+  example:
+    // Пример за променливи върху стека
+    fn main() {
+        let a = 3;
+        let b = 42;
+    }
+
+  p Примерни адреси:
+  ' <pre>
+    0x7ffee0bb6c<strong>48</strong>
+    0x7ffee0bb6c<strong>4c</strong>
+    </pre>
+
+= slide 'Stack & Heap', 'Динамична памет (Heap)' do
+  list:
+    Данни с произволна дължина
+    Не е задължително подреден
+    Расте докато не се срещне със стека
+    Операционната състема разпределя паметта като раздава указатели (pointers)
+    Указателите са с фиксирана дължина и стоят на стека
+    За да използваме заделената памет трябва да проследим указателя което забавя процесора
+    В C трябва да се грижим за освобождаването на паметта
+    Много езици използват GC (garbage collection)
+    Rust използва трети подход - собственост (ownership)
+
+= slide 'Stack & Heap', 'Динамична памет (Heap)' do
+  img src="images/Memory-Layout.gif"
+
+= slide 'Собственост и заемане', 'Собственост' do
+  img src="images/Gollum.jpg"
+
+= slide 'Собственост и заемане', 'Собственост' do
+  p Правила
+  list:
+    Всяка стойност в Rust си има собственик (owner)
+    Стойността може да има само един собственик по всяко едно време
+    Когато собственикът излезе от scope, стойността се drop-ва/деалокира (подобно на деструктор)
+
+= slide 'Собственост и заемане', 'Собственост' do
+  example:
+    {
+        let a = 123;
+
+        // ...
+    }
+
+  list:
+    Променливата <code>a</code> е валидна от декларацията до края на scope-a
+
+= slide 'Низове', 'Литерали' do
+  example:
+    let s = "hello";
+
+  list:
+    Вграден в кода (hardcoded)
+    Непроменим (immutable)
+
+= slide 'Низове', 'String' do
+  example:
+    let s = String::from("hello");
+
+  list:
+    Заделя се в динамичната памет
+    Може да се променя (mutable)
+    За разлика от литерала, може да се използва при четене от стандартния вход или файл
+
+= slide 'Низове' do
+  example:
+    let mut second = String::from("Баба");
+    second.push_str(" и дядо");     // push_str() конкатенира литерал към String
+
+    println!("{}", second);
+
+= slide 'Низове' do
+  example:
+    let mut first = "Баба";
+    // first.push_str(" и дядо");   // грешка при компилиране
+
+= slide 'Присвояване' do
+  example:
+    let x = 5;
+    let y = x;                        // копие на стойността
+
+    println!("{}, {}", x, y);
+
+    let s1 = String::from("hello");
+    let s2 = s1;                      // ??
+
+= slide 'Разполагане в паметта', 'String' do
+  img src="images/trpl04-01.png"
+
+= slide 'Разполагане в паметта', 's2 = s1' do
+  p Побитово копиране на стека &rarr; двойна деалокация
+
+  img src="images/trpl04-02.png"
+
+= slide 'Разполагане в паметта', 's2 = s1' do
+  p Копие на стека и на динамичната памет, което може да доведе до сериозно забавяне
+
+= slide 's2 = s1' do
+  img src="images/trpl04-03.png"
+
+= slide 'Семантика на местене (Move semantics)' do
+  p Вместо копиране, което е скъпо в някои случаи, Rust използва семантика на местене
+
+  example:
+    let x = 5;
+    let y = x;                        // копие на стойността
+
+    let s1 = String::from("hello");
+    let s2 = s1;                      // s1 не може да се използва след този ред
+
+    println!("{}", s2);
+    // println!("{}", s1);            // грешка при компилиране
+
+= slide 'Семантика на местене (Move semantics)' do
+  p Вместо копиране, което е скъпо в някои случаи, Rust използва семантика на местене
+
+  example:
+    println!("{}", s2);
+    // println!("{}", s1);            // грешка при компилиране
+
+  ' <pre>
+    error[E0382]: use of moved value: `s1`
+    --> src/main.rs:9:20
+      |
+    6 |     let s2 = s1;
+      |         -- value moved here
+    ...
+    9 |     println!("{}", s1);
+      |                    ^^ value used here after move
+      |
+      = note: move occurs because `s1` has type `std::string::String`,
+        which does not implement the `Copy` trait
+    </pre>
+
+= slide 'Низове', 'Clone' do
+  p Ако все пак искаме да копираме String, може да го направим чрез метода <code>clone()</code>
+
+  example:
+    let s1 = String::from("hello");
+    let s2 = s1.clone();
+
+    println!("{}, {}!", s1, s2);
+
+= slide 'Собственост', 'Функции' do
+  p При подаването на аргументи към функция важат същите семантики
+
+  example:
+    fn main() {
+        let s = String::from("hello");  // Дефинираме s
+
+        takes_ownership(s);             // Стойността на s се мести във функцията и
+                                        // затова не е валидна след този ред.
+
+    } // Тук s излиза от scope, но s е преместен и не се случва нищо особено.
+
+    fn takes_ownership(some_string: String) {
+        println!("{}", some_string);
+    } // some_string излиза от scope и се извиква `drop`, което освобождава паметта.
+
+= slide 'Собственост', 'Функции' do
+  p При подаването на аргументи към функция важат същите семантики
+
+  example:
+    fn main() {
+        let x = 5;                      // Дефинираме x
+
+        makes_copy(x);                  // Тук стойността на x би се преместила във функцията,
+                                        // но i32 е Copy, затова може да използваме x в последствие.
+
+    } // Тук x излиза от scope.
+
+    fn makes_copy(some_integer: i32) {
+        println!("{}", some_integer);
+    } // some_integer излиза от scope, но не се случва нищо особено.
+
+= slide 'Собственост', 'Функции' do
+  p Връщане на стойност от функция също може да прехвърля собственост
+
+  example:
+    fn main() {
+        let s1 = gives_ownership();
+        let s2 = String::from("hello");
+        let s3 = takes_and_gives_back(s2);
+    }
+
+    fn gives_ownership() -> String {
+        let some_string = String::from("hello");
+        some_string       // Тук местим стойността към функцията която е извикала gives_ownership
+    }
+
+    fn takes_and_gives_back(a_string: String) -> String {
+        a_string
+    }
+
+= slide 'Собственост', 'Функции' do
+  example:
+    fn main() {
+        let s1 = String::from("hello");
+        let (s2, len) = calculate_length(s1);
+
+        println!("The length of '{}' is {}.", s2, len);
+    }
+
+    fn calculate_length(s: String) -> (String, usize) {
+        let length = s.len(); // len() връща дължината на String.
+        (s, length)
+    }
+
+= slide 'Собственост и заемане', 'Заемане (borrowing)' do
+  p А какво ако искаме да използваме стойност във функция без да я местим всеки път?
+
+  img src="images/hamali.jpg"
+
+= slide 'Собственост и заемане', 'Псевдоними' do
+  example:
+    fn main() {
+        let s1 = String::from("hello");
+        let len = calculate_length(&s1);
+
+        println!("The length of '{}' is {}.", s1, len);
+    }
+
+    fn calculate_length(s: &String) -> usize {
+        s.len()
+    }
+
+= slide 'Псевдоними', 'Представяне' do
+  img src="images/trpl04-05.png"
+
+= slide 'Псевдоними', 'Непроменим псевдоним (immutable reference)' do
+  example:
+    fn main() {
+        let s = String::from("hello");
+        change(&s);
+    }
+
+    fn change(some_string: &String) {
+        some_string.push_str(", world");
+    }
+
+  pre.action
+    ' error: cannot borrow immutable borrowed content `*some_string` as mutable
+      --> error.rs:8:5
+        |
+      8 |     some_string.push_str(", world");
+        |     ^^^^^^^^^^^
+
+= slide 'Псевдоними', 'Променим псевдоним (mutable reference)' do
+  example:
+    fn main() {
+        let mut s = String::from("hello");
+        change(&mut s);
+    }
+
+    fn change(some_string: &mut String) {
+        some_string.push_str(", world");
+    }
+
+= slide 'Псевдоними', 'Правила' do
+  p 1. По всяко време може да съществува само едно от следните:
+  ul
+    li точно един mutable псевдоним
+    li произволен брой immutable псевдоними
+  p 2. Псевдонимите винаги са валидни
+
+= slide 'Псевдоними', 'Borrow checker' do
+  example:
+    let mut s = String::from("hello");
+
+    let r1 = &mut s;
+    let r2 = &mut s;
+
+  pre
+    ' error[E0499]: cannot borrow `s` as mutable more than once at a time
+      --> src/main.rs:5:19
+        |
+      4 |     let r1 = &mut s;
+        |                   - first mutable borrow occurs here
+      5 |     let r2 = &mut s;
+        |                   ^ second mutable borrow occurs here
+      6 | }
+        | - first borrow ends here
+
+= slide 'Псевдоними', 'Borrow checker' do
+  example:
+    let mut s = String::from("hello");
+
+    {
+        let r1 = &mut s;
+    }
+
+    let r2 = &mut s;
+
+= slide 'Псевдоними', 'Валидност' do
+  example:
+    let s1 = String::from("hello");
+    let r = &s1;
+
+    let s2 = s1;    // грешка
+
+  list:
+    псевдонимът винаги сочи към обект (няма null псевдоним)
+    не можем да местим обект докато е зает (borrowed)
+
+= slide 'Псевдоними', 'Валидност' do
+  example:
+    let r;
+    {
+        let s = String::from("hello");
+        r = &s;
+    }
+
+    println!("{}", r);
+
+  list:
+    псевдонимът не може да надживее обекта, към който сочи
+
+= slide 'Псевдоними', 'Валидност' do
+  pre
+    ' error[E0597]: `s` does not live long enough
+      --> src/main.rs:6:5
+        |
+      5 |         r = &s;
+        |              - borrow occurs here
+      6 |     }
+        |     ^ `s` dropped here while still borrowed
+      ...
+      9 | }
+        | - borrowed value needs to live until here
+
+= slide 'Псевдоними' do
+  example:
+    let s = String::from("first");
+    let r = &s;
+
+    let s = String::from("second");
+
+    println!("{}", r);
+    println!("{}", s);
+
+= slide 'Псевдоними' do
+  example:
+    let s = String::from("hello");
+    let s = &s;
+
+    println!("{}", s);
