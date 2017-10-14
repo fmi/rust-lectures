@@ -1,0 +1,574 @@
+= slide 'Административни неща' do
+  list:
+    Регистрирайте се в [https://fmi.rust-lang.bg](https://fmi.rust-lang.bg)!
+    Качете си снимка! (+1 точки)
+    Инсталирайте си Rust (+1 точки) [https://fmi.rust-lang.bg/topics/2](https://fmi.rust-lang.bg/topics/2)
+
+= slide 'Преговор' do
+  list:
+    Кортежи (tuples)
+    Stack & Heap
+    Собственост (3 правила)
+    Низове (2 вида: на стека и в динамичната памет)
+    Присвояване (преместване или копиране)
+    Собственост при викане на функции
+    Заемане на стойности
+    Псевдоними (2 правила)
+
+= slide 'Странности от миналата лекция', '(неща, които изненадаха Андрей)' do
+  example:
+    let r;
+    {
+        r = String::new("foobar");
+    }
+    println!("{}", r);
+
+= slide 'Странности от миналата лекция', '(неща, които изненадаха Андрей)' do
+  example:
+    let x;
+    println!("{}", x = 3); // wat
+
+= slide 'Странности от миналата лекция', '(неща, които изненадаха целия екип)' do
+  example:
+    println!("{x} {y} {z}", x = 3, z = 1, y = 2);
+
+= slide 'rustc 1.21.0 🎉' do
+  list:
+    Нова версия на компилатора
+    <code>rustup update</code>
+
+= slide 'Масиви' do
+  example:
+    let a: [i32; 5] = [1, 2, 3, 4, 5];
+
+    let elem = a[2];
+    println!("{}", elem);   // 3
+
+  list:
+    тип <code>[T; n]</code>
+    фиксирана големина по време на компилация
+    големината е част от типа - <code>[T; 3]</code> и <code>[T; 5]</code> са различни
+    индексацията започва от 0
+    автоматична проверка дали подаденият индекс е валиден
+
+= slide 'Масиви', 'Многоизмерни масиви' do
+  example:
+    let a: [[i32; 5]; 3] = [
+        [01, 02, 03, 04, 05],
+        [11, 12, 13, 14, 15],
+        [21, 22, 23, 24, 25],
+    ];
+
+    let elem_1_2 = a[1][2];
+    println!("{}", elem_1_2);   // ?
+
+= slide 'Масиви', 'Пропускане на типа' do
+  example:
+    // ако работи - добре
+    let a = [1, 2, 3, 4, 5];
+
+    // ако не - трябва да кажем типа на поне един елемент
+    let a = [1_i32, 2, 3, 4, 5];
+    let a = [1, 2, 3_i32, 4, 5];
+    let a = [1, 2, 3, 4, 5_i32];
+
+    let a = [
+        [01, 02, 03, 04, 05],
+        [11, 12, 13, 14, 15],
+        [21, 22, 23, 24, 25_i32],
+    ];
+
+= slide 'Динамични масиви', 'Вектори' do
+  example:
+    let a = vec![1, 2, 3, 4, 5];
+
+    let elem = a[2];
+    println!("{}", elem);   // 3
+
+  list:
+    тип <code>Vec&lt;T&gt;</code>
+    алокира се в динамичната памет
+    променлив брой елементи - можем да добавяме или премахваме
+    макро <code>vec!</code> позволява лесно инициализиране
+    автоматична проверка дали подаденият индекс е валиден
+
+= slide 'Динамични масиви', 'vec!' do
+  example:
+    let a = vec![1, 2, 3, 4, 5];
+
+  p Еквивалентно на
+
+  example:
+    let a = {
+        let mut tmp = Vec::new();
+        tmp.push_back(1);
+        tmp.push_back(2);
+        tmp.push_back(3);
+        tmp.push_back(4);
+        tmp.push_back(5);
+        tmp
+    };
+
+= slide 'Динамични масиви', 'Разполагане в паметта' do
+  img src="images/vec_memory.png"
+
+= slide 'Взимане на елемент' do
+  example:
+    let v = vec![String::from("баба"), String::from("дядо")];
+
+    let baba = v[0];    // грешка, String не е Copy
+
+= slide 'Взимане на елемент' do
+  example:
+    let v = vec![String::from("баба"), String::from("дядо")];
+
+    let baba = &v[0];
+    let dqdo = &v[1];
+    // let vnuche = &v[2]; // грешка при изпълнение
+
+= slide 'Взимане на елемент' do
+  example:
+    let v = vec![String::from("баба"), String::from("дядо")];
+
+    let baba = &v[0];
+    let dqdo = &v[1];
+
+    v.push_back(String::from("внуче"));   // грешка
+
+= slide 'Заемане на част от структура' do
+  p Можем да заемаме отделни части от структури и кортежи
+
+  example:
+    let x = (1, 2);
+
+    let r1 = &x;
+    let r2 = &x.0;
+    let r3 = &x.1;
+
+= slide 'Заемане на част от структура' do
+  p Отделните части се считат като отделни стойности от borrow checker-a
+
+  example:
+    let mut x = (1, 2);
+
+    let r1 = &mut x.0;
+    let r2 = &mut x.1;
+
+    let r1 = &mut x.0;
+    let r2 = &mut x.0;  // грешка
+
+= slide 'Заемане на част от структура' do
+  p Но се считат и като заемане на цялата структура
+
+  example:
+    let mut x = (1, 2);
+
+    let r1 = &x.0;
+    let r2 = &mut x;  // грешка
+
+    let r1 = &mut x.0;
+    let r2 = &x       // грешка
+
+= slide 'Заемане на част от масив' do
+  example:
+    let mut a = [String::from("баба"), String::from("дядо")];
+
+    let baba = &mut a[0];
+    let dqdo = &mut a[1];   // ?
+
+= slide 'Заемане на част от масив', 'Резени' do
+  img src="images/rezeni.jpg"
+
+= slide 'Резени', '(Slices)' do
+  example:
+    let s = String::from("hello world");
+
+    let hello = &s[0..5];
+    let world = &s[6..11];
+
+    println!("{} {}", hello, world);
+
+  list:
+    тип <code>&[T]</code>, за резен от масив
+    тип <code>&str</code>, за резен от низ
+
+= slide 'Резени', '(Slices)' do
+  img src="images/trpl04-06.png"
+
+= slide 'Резени', '(Slices)' do
+  example:
+    let s = String::from("hello");
+    let len = s.len();
+
+    let slice = &s[0..2];
+    let slice = &s[..2];
+
+    let slice = &s[3..len];
+    let slice = &s[3..];
+
+    let slice = &s[..];
+
+= slide 'Резени', '(Slices)' do
+  example:
+    fn first_word(s: &String) -> &str {
+        let mut i = 0;
+
+        for byte in s.bytes() {
+            if byte == b' ' {
+                return &s[0..i];
+            }
+            i += 1;
+        }
+
+        &s[..]
+    }
+
+= slide 'Резени', '(Slices)' do
+  p Какво става, ако не е псевдоним?
+
+  example:
+    let s = String::from("hello world");
+    let hello = s[0..5];
+
+    println!("{}", hello);
+
+  ' <pre>
+    error[E0277]: the trait bound `str: std::marker::Sized` is not satisfied
+    --> src/main.rs:3:9
+      |
+    3 |     let hello = s[0..5];
+      |         ^^^^^ `str` does not have a constant size known at compile-time
+      |
+      = help: the trait `std::marker::Sized` is not implemented for `str`
+      = note: all local variables must have a statically known size
+    </pre>
+
+= slide 'Смесване на типове' do
+  example:
+    fn first_word(s: &String) -> &str { /* ... */ }
+
+  example:
+    fn first_word(s: &str) -> &str { /* ... */ }
+
+= slide 'Смесване на типове' do
+  example:
+    fn main() {
+        let hello = String::from("hello world");
+        let word = first_word(&hello[..]); // slice от String
+
+        let hello = "hello world";
+        let word = first_word(&hello[..]); // slice от &str
+        let word = first_word(hello);      // директно подаваме &str
+    }
+
+= slide 'Deref coercion' do
+  p Правила за автоматично конвертиране от един тип псевдоним до друг
+  p Използват се само при:
+  ul
+    li подаване на аргумент на функция
+    li извикване на метод
+
+  p.action Примери
+  list:
+    <code>&[u32; 5]</code> -> <code>&[u32]</code>
+    <code>&Vec&lt;u32&gt;</code> -> <code>&[u32]</code>
+    <code>&String</code> -> <code>&str</code>
+
+= slide 'Смесване на типове' do
+  example:
+    fn main() {
+        let hello = String::from("hello world");
+        let word = first_word(&hello);      // еквивалентно на &hello[..]
+        let len = hello.len();              // автоматично конвентира до &str и извиква метода му len
+
+        let hello = "hello world";
+        let word = first_word(hello);       // директно подаваме &str
+        let len = hello.len();              // директно извикваме метода len
+    }
+
+= slide 'Статични низове' do
+  example:
+    let s: &'static str = "Hello, world!";
+
+= slide 'Structs' do
+  example:
+    struct User {
+        username:      String,
+        email:         String,
+        sign_in_count: u64,
+        active:        bool,
+    }
+
+= slide 'Structs' do
+  example:
+    fn main() {
+        let baba = User {
+            email:         String::from("baba@abv.bg"),
+            username:      String::from("baba_1337"),
+            active:        true,
+            sign_in_count: 1,
+        };
+
+        println!("{:?}", baba); // грешка, за момента
+    }
+
+= slide 'Structs', 'атрибут derive' do
+  example:
+    #[derive(Debug)]
+    struct User {
+        username:      String,
+        email:         String,
+        sign_in_count: u64,
+        active:        bool,
+    }
+
+= slide 'Structs' do
+  example:
+    fn main() {
+        let baba = User {
+            email:         String::from("baba@abv.bg"),
+            username:      String::from("baba_1337"),
+            active:        true,
+            sign_in_count: 1,
+        };
+
+        println!("{:?}", baba);
+        // => User { username: "baba_1337", email: "baba@abv.bg", sign_in_count: 1, active: true }
+    }
+
+= slide 'Structs', 'field mutability' do
+  example:
+    let baba = User { /* ... */ };
+
+    // baba.email = String::from("hackerman@l33t.hax"); // грешка
+
+    let mut baba = baba;
+
+    baba.email = String::from("hackerman@l33t.hax");
+
+= slide 'Structs', 'update syntax' do
+  example:
+    let hackerman = User {
+        email:          String::from("hackerman@l33t.hax"),
+        username:       String::from(""),
+        active:         baba.active,
+        sign_in_count:  baba.sign_in_count,
+    };
+
+    println!("{:?}", hackerman);
+    // => User { username: "", email: "hackerman@l33t.hax", sign_in_count: 1, active: true }
+
+= slide 'Structs', 'update syntax' do
+  example:
+    let hackerman = User {
+        email:    String::from("hackerman@l33t.hax"),
+        username: String::from(""),
+        ..baba,
+    };
+
+    println!("{:?}", hackerman);
+    // => User { username: "", email: "hackerman@l33t.hax", sign_in_count: 1, active: true }
+
+= slide 'Tuple Structs', '(кортежни структури? структурни кортежи?)' do
+  example:
+    struct Color(i32, i32, i32);
+    struct Point(i32, i32, i32);
+
+    let black = Color(0, 0, 0);
+    let origin = Point(0, 0, 0);
+
+= slide 'Unit Structs' do
+  example:
+    struct Electron {} // Празни скоби...
+    struct Proton;     // ...или просто точка и запетая.
+
+    // Използвайте същата нотация когато инстанцирате структурата.
+    let x = Electron {};
+    let y = Proton;
+    // let z = Electron; // грешка
+
+  list:
+    Големина 0 байта
+
+= slide 'Structs: what about &str' do
+  p А защо не <code>&str</code> вместо <code>String</code>?
+
+  example:
+    struct User {
+        username:      &str, // ???
+        email:         &str, // ???
+        sign_in_count: u64,
+        active:        bool,
+    }
+
+  ' <pre>
+    error[E0106]: missing lifetime specifier
+    --> src/main.rs:3:20
+      |
+    3 |     username:      &str,
+      |                    ^ expected lifetime parameter
+
+    ...
+    </pre>
+
+= slide 'Lifetimes' do
+  p ... са неща, за които ще говорим после
+  p Просто използвайте <code>String</code> засега
+
+= slide 'Методи' do
+  example:
+    #[derive(Debug)]
+    struct Rectangle {
+        length: u32,
+        width: u32,
+    }
+
+    fn main() {
+        let r = Rectangle { length: 50, width: 30 };
+
+        println!(
+            "Площта на правоъгълника е {}px²",
+            r.length * r.width
+        );
+    }
+
+= slide 'Методи' do
+  example:
+    #[derive(Debug)]
+    struct Rectangle {
+        length: u32,
+        width: u32,
+    }
+
+    impl Rectangle {
+        fn area(&self) -> u32 {
+            self.length * self.width
+        }
+    }
+
+= slide 'Методи' do
+  example:
+    fn main() {
+        let r = Rectangle { length: 50, width: 30 };
+
+        println!(
+            "Площта на правоъгълника е {}px²",
+            r.area()
+        );
+    }
+
+= slide 'Методи', 'какво е self?' do
+  example:
+    impl Rectangle {
+        fn area(self: &Rectangle) -> u32 {
+            self.length * self.width
+        }
+    }
+
+= slide 'Методи', 'видове дефиниции' do
+  example:
+    impl SomeStructType {
+        fn method_borrows(&self) -> u32 { 42 }
+
+        fn method_borrows_mutably(&mut self) -> u32 { 42 }
+
+        fn method_takes_ownership(self) -> u32 { 42 }
+    }
+
+= slide 'Методи', 'mutable borrow' do
+  example:
+    // impl std::string::String {
+    fn push_str(&mut self, string: &str) {
+
+    let mut s = String::from("hello");
+    // let s2 = &mut s; // грешка
+    s.push_str(", world");
+
+= slide 'Методи', 'Deref coercion' do
+  example:
+    struct Point { x: f64, y: f64 };
+
+    impl Point {
+        fn distance(self: &Point, other: &Point) -> f64 {
+            // ...
+        }
+    }
+
+    p1.distance(&p2);
+    (&&&p1).distance(&&&&&&p2);
+
+= slide 'Методи', 'Deref coercion' do
+    table
+      thead
+        tr
+          th Rust
+          th colspan="2" C
+      tbody
+        tr
+          td (&instance).field
+          td (*(&instance)).field
+          td instance->field
+        tr
+          td (&&&instance).field
+          td (***(&&&instance)).field
+          td (**(&&&instance))->field
+
+= slide 'Асоциирани методи' do
+  example:
+    #[derive(Debug)]
+    struct User {
+        username:      String,
+        email:         String,
+        sign_in_count: u64,
+        active:        bool,
+    }
+
+= slide 'Асоциирани методи' do
+  example:
+    impl User {
+        fn new(username: &str, email: &str) -> User {
+            User {
+                username:      String::from(username),
+                email:         String::from(email),
+                sign_in_count: 0,
+                active:        false,
+            }
+        }
+    }
+
+    fn main() {
+        let gosho = User::new("~*-_Lo60-Go60_-*~", "go6enceto@abv.bg");
+    }
+
+= slide 'Съкратен синтаксис' do
+  example:
+    impl User {
+        fn new(username: String, email: String) -> User {
+            User {
+                username,
+                email,
+                sign_in_count: 0,
+                active:        false,
+            }
+        }
+    }
+
+= slide 'Методи', 'тип Self' do
+  example:
+    impl SomeLongStructNameThatWeDontWantToRepeat {
+        fn new(username: String, email: String) -> Self {
+            Self {
+                username,
+                email
+            }
+        }
+    }
+
+= slide 'Асоциирани методи', 'формално извикване на методи' do
+  example:
+    fn main() {
+        let r = Rectangle { length: 50, width: 30 };
+        let area = Rectangle::area(&r);
+
+        println!("Площта на правоъгълника е {}px²", area);
+    }
