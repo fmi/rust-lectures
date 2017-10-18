@@ -1,0 +1,689 @@
+= slide 'Административни неща' do
+  list:
+    Време за почивка
+    Evans: хитринки
+
+= slide 'Въпрос' do
+  example:
+    fn print_length(s: &String) {
+        println!("The length of '{:?}' is: {}", s, s.len());
+    }
+
+    let s1 = "Static string";
+    print_length( /* ??? */ );
+
+    let s2 = String::from("Heap-allocated string");
+    print_length( /* ??? */ );
+
+    let s3 = s2[14..];
+    print_length( /* ??? */ );
+
+= slide 'Отговор' do
+  example:
+    fn print_length(s: &String) {
+        println!("The length of '{:?}' is: {}", s, s.len());
+    }
+
+    let s1 = "Static string"; // => &str
+    print_length(&String::from(s1));
+
+    let s2 = String::from("Heap-allocated string"); // => String
+    print_length(&s2);
+
+    let s3 = &s2[14..]; // => &str
+    print_length(&String::from(s3));
+
+= slide 'Въпрос' do
+  example:
+    fn print_length(s: &str) {
+        println!("The length of '{:?}' is: {}", s, s.len());
+    }
+
+    let s1 = "Static string";
+    print_length( /* ??? */ );
+
+    let s2 = String::from("Heap-allocated string");
+    print_length( /* ??? */ );
+
+    let s3 = s2[14..];
+    print_length( /* ??? */ );
+
+= slide 'Отговор' do
+  example:
+    fn print_length(s: &str) {
+        println!("The length of '{:?}' is: {}", s, s.len());
+    }
+
+    let s1 = "Static string"; // => &str
+    print_length(s1);
+
+    let s2 = String::from("Heap-allocated string"); // => String
+    print_length(&s2[..]);
+    print_length(&s2);
+
+    let s3 = s2[14..]; // => &str
+    print_length(s3);
+
+= slide 'Въпрос' do
+  example:
+    fn print_length(l: &[u32]) {
+        println!("The length of '{:?}' is: {}", l, l.len());
+    }
+
+    let l1 = [1_u32, 2, 3, 4];
+    print_length( /* ??? */ );
+
+    let l2 = vec![1_u32, 2, 3, 4];
+    print_length( /* ??? */ );
+
+    let l3 = &l2[0..2]; // => &[u32]
+    print_length( /* ??? */ );
+
+= slide 'Отговор' do
+  example:
+    fn print_length(l: &[u32]) {
+        println!("The length of '{:?}' is: {}", l, l.len());
+    }
+
+    let l1 = [1_u32, 2, 3, 4]; // => [u32; 4];
+    print_length(&l1);
+
+    let l2 = vec![1_u32, 2, 3, 4]; // => Vec<u32>
+    print_length(&l2);
+
+    let l3 = &l2[0..2]; // => &[u32]
+    print_length(l3);
+
+= slide 'Deref coercion' do
+  list:
+    `&String` &rarr; `some_func(&str)`
+    `&Vec<u32>` &rarr; `some_func(&[u32])`
+
+= slide 'println!' do
+  example:
+    println!("{}² + {}² = {}²", 3, 4, 5);
+
+    print!("{}² + {}² = {}²\n", 3, 4, 5);
+
+= slide 'Въпрос: format!' do
+  example:
+    let s = format!("{}² + {}² = {}²", 3, 4, 5);
+
+  p Въпрос: какво смятате, че е s?
+
+  list:
+    `&'static str`
+    `&str`
+    `&String`
+    `String`
+
+= slide 'Въпрос: format!' do
+  example:
+    let s = format!("{}² + {}² = {}²", 3, 4, 5);
+
+  list:
+    `&'static str` &rarr; НЕ. Има динамични данни.
+    `&str`, `&String` &rarr; НЕ. Кой е owner?
+    `String` &rarr; ДА
+
+= slide 'Модули' do
+  img src="images/modules.jpg"
+
+= slide 'Модули' do
+  ' <pre>
+    cargo new communicator
+
+= slide 'Модули' do
+  example:
+    mod network {
+        fn connect() {
+            // ...
+        }
+    }
+
+    mod client {
+        fn connect() {
+            // ...
+        }
+    }
+
+= slide 'Модули' do
+  list:
+    Toplevel namespace-a е `::` (за външни пакети, `communicator::`)
+    Вътре имаме модули `network`, `client`
+    И в двата модула имаме функция `connect`
+    `network::connect()`
+    `client::connect()`
+
+= slide 'Модули' do
+  example:
+    mod network {
+        fn connect() {
+            // ...
+        }
+
+        mod client {
+            fn connect() {
+                // ...
+            }
+        }
+    }
+
+= slide 'Модули' do
+  list:
+    `network::connect()`
+    `network::client::connect()`
+
+= slide 'Модули' do
+  example:
+    mod network {
+        fn connect() { /* ... */ }
+
+        mod client {
+            fn connect() { /* ... */ }
+
+            fn init() {
+                // извикваме `network::connect()`
+                ::network::connect();
+                super::connect();
+                // network::connect()   // грешка при компилация
+            }
+        }
+    }
+
+= slide 'Модули' do
+  example:
+    mod network {
+        fn connect() { /* ... */ }
+
+        mod client {
+            fn connect() { /* ... */ }
+
+            fn init() {
+                // извикваме `network::connect()`
+                ::network::connect();
+                super::connect();
+                // network::connect()   // грешка при компилация
+            }
+        }
+    }
+
+
+= slide 'Модули' do
+  example:
+    mod network {
+        fn connect() { /* ... */ }
+
+        fn init() {
+            // извикваме `network::connect()`
+            connect();
+            ::network::connect();
+        }
+
+        mod client {
+            fn connect() { /* ... */ }
+        }
+    }
+
+= slide 'Модули' do
+  example:
+    mod network {
+        fn connect() { /* ... */ }
+
+        fn init() {
+            // извикваме `network::client::connect()`
+            client::connect();              // ?
+            ::network::client::connect();   // ?
+        }
+
+        mod client {
+            fn connect() { /* ... */ }
+        }
+    }
+
+= slide 'Модули' do
+  ' <pre>
+    error[E0603]: function `connect` is private
+      --> src/main.rs:12:9
+       |
+    12 |         client::connect();
+       |         ^^^^^^^^^^^^^^^
+
+= slide 'Модули', 'pub' do
+  example:
+    mod network {
+        fn connect() { /* ... */ }
+
+        fn init() {
+            // извикваме `network::connect()`
+            client::connect();
+            ::network::client::connect();
+        }
+
+        mod client {
+            // добавяме pub
+            pub fn connect() { /* ... */ }
+        }
+    }
+
+= slide 'Модули', 'pub' do
+  example:
+    mod network {
+        mod client {
+            pub fn connect() {
+                log_debug_statement();
+            }
+
+            fn log_debug_statement() {
+                println!("client::connect()");
+            }
+        }
+    }
+
+= slide 'Модули', 'pub' do
+  example:
+    mod network {
+        mod client {
+            pub fn connect() {
+                log_debug_statement();
+            }
+
+            fn log_debug_statement() {
+                println!("client::connect()");
+            }
+        }
+    }
+
+    fn main() {
+        network::client::connect();     // ?
+    }
+
+= slide 'Модули', 'pub' do
+  example:
+    pub mod network {
+        pub mod client {
+            pub fn connect() {
+                log_debug_statement();
+            }
+
+            fn log_debug_statement() {
+                println!("client::connect()");
+            }
+        }
+    }
+
+    fn main() {
+        network::client::connect();
+    }
+
+= slide 'Модули', 'файлове' do
+  example:
+    mod client {
+        fn connect() { /* ... */ }
+    }
+
+    mod network {
+        fn connect() { /* ... */ }
+
+        mod server {
+            fn connect() { /* ... */ }
+        }
+    }
+
+= slide 'Модули', 'файлове' do
+  ' <pre>
+    communicator
+    ├── client
+    └── network
+        └── server
+
+= slide 'Модули', 'файлове' do
+  ' <pre>
+    communicator/
+    ├── src/main.rs
+    ├── src/lib.rs
+    ├── src/client.rs
+    └── src/network/
+        ├── mod.rs
+        └── server.rs
+
+= slide 'Модули', 'файлове' do
+  p <code>src/lib.rs</code>
+
+  example:
+    pub mod client;
+    pub mod network;
+
+= slide 'Модули', 'файлове' do
+  p <code>src/client.rs</code>
+
+  example:
+    // ::client::connect()
+    pub fn connect() {
+        log_debug_statement();
+    }
+
+    fn log_debug_statement() {
+        println!("client::connect()");
+    }
+
+= slide 'Модули', 'файлове' do
+  p <code>src/network/mod.rs</code>
+
+  example:
+    pub mod server;
+
+    // ::network::connect()
+    pub fn connect() {
+    }
+
+= slide 'Модули', 'файлове' do
+  p <code>src/network/server.rs</code>
+
+  example:
+    // ::network::server::connect()
+    pub fn connect() {
+    }
+
+= slide 'Модули', 'употреба' do
+  p <code>src/main.rs</code>
+
+  example:
+    fn main() {
+         client::connect();
+         network::connect();
+         network::server::connect();
+    }
+
+= slide 'Модули', 'употреба' do
+  p От външен проект:
+
+  example:
+    extern crate communicator;
+
+    fn main() {
+         communicator::client::connect();
+         communicator::network::connect();
+         communicator::network::server::connect();
+
+         // communicator::client::log_debug_statement() // => compile-time грешка
+    }
+
+= slide 'Модули', 'use' do
+  example:
+    extern crate communicator;
+
+    use communicator::client;
+    use communicator::network;
+
+    fn main() {
+         client::connect();
+         network::connect();
+         network::server::connect();
+    }
+
+= slide 'Модули', 'use' do
+  example:
+    extern crate communicator;
+
+    use communicator::{client, network};
+
+    fn main() {
+         client::connect();
+         network::connect();
+         network::server::connect();
+    }
+
+= slide 'Модули', 'use' do
+  example:
+    extern crate communicator;
+
+    use communicator::client;
+    use communicator::{self, server};
+
+    fn main() {
+         client::connect();
+         network::connect();
+         server::connect();
+    }
+
+
+= slide 'Модули', 'конфликти с use' do
+  example:
+    extern crate communicator;
+
+    use communicator::client::connect;
+    use communicator::network::connect;
+
+    // Compile-time грешка
+
+= slide 'Модули', 'конфликти с use' do
+  example:
+    extern crate communicator;
+
+    use communicator::client::connect as client_connect;
+    use communicator::network::connect as network_connect;
+
+= slide 'Атрибути' do
+  list:
+    Java - Annotation
+    Python - Decorator
+    Rust - Attribute
+
+= slide 'Атрибути', 'Синтаксис' do
+  list:
+    #[test]
+    #[derive(Debug, Clone)]
+    #[cfg(target_os = "macos")]
+
+= slide 'Атрибути', 'Синтаксис' do
+  example:
+    #[test]
+    fn test_something() {
+        // ...
+    }
+
+= slide 'Атрибути', 'Синтаксис' do
+  example:
+    #[derive(Debug, Clone)]
+    struct User {
+        // ...
+    }
+
+= slide 'Атрибути', 'Синтаксис' do
+  p Някои примери за условна компилация
+
+  example:
+    #[cfg(target_os = "macos")]
+    struct Client;
+
+    #[cfg(any(foo, bar))]
+    fn bark() { /*...*/ }
+
+    #[cfg(all(unix, target_pointer_width = "32"))]
+    impl Cat {}
+
+    #[cfg(not(foo))]
+    {
+        // ...
+    }
+
+= slide 'Документация' do
+  p Атрибут `doc`
+
+  list:
+    Модули `#![doc="Hello World"]`
+    Всичко останало `#[doc="Hello World"]`
+
+= slide 'Документация', 'Модули' do
+  example:
+    //! A contiguous growable array type with heap-allocated contents, written
+    //! `Vec<T>`.
+    //!
+    //! Vectors have `O(1)` indexing, amortized `O(1)` push (to the end) and
+    //! `O(1)` pop (from the end).
+    //!
+    //! # Examples
+    //!
+    //! You can explicitly create a [`Vec<T>`] with [`new`]:
+    //!
+    //! ```
+    //! let v: Vec<i32> = Vec::new();
+    //! ```
+
+= slide 'Документация' do
+  example:
+    /// A UTF-8 encoded, growable string.
+    ///
+    /// The `String` type is the most common string type that has ownership over the
+    /// contents of the string. It has a close relationship with its borrowed
+    /// counterpart, the primitive str.
+    pub struct String {
+        vec: Vec<u8>,
+    }
+
+= slide 'Документация', 'Полета' do
+  example:
+    pub struct String {
+        /// Some field comment
+        vec: Vec<u8>, /// This does not work
+    }
+
+= slide 'Документация' do
+  example:
+    impl String {
+        /// Creates a new empty `String`.
+        ///
+        /// Given that the `String` is empty, this will not allocate any initial
+        /// buffer. While that means that this initial operation is very
+        /// inexpensive, but may cause excessive allocation later, when you add
+        /// data. If you have an idea of how much data the `String` will hold,
+        /// consider the [`with_capacity`] method to prevent excessive
+        /// re-allocation.
+        pub fn new() -> String {
+            String { vec: Vec::new() }
+        }
+    }
+
+= slide 'Документация', 'Инструменти' do
+  list:
+    `rustdoc`
+    `cargo doc`
+    `The Rustdoc Book`
+
+= slide 'Тестове' do
+  list:
+    Unit tests
+    Integration tests
+    Doc tests
+
+= slide 'Тестове', 'Команди' do
+  list:
+    `cargo test` пуска всички тестове на проекта
+    `cargo test --help` за повече информация
+
+= slide 'Тестове', 'Unit tests' do
+  example:
+    #[cfg(test)]
+    mod tests {
+        #[test]
+        fn it_works() {
+            // ...
+        }
+    }
+
+= slide 'Тестове', 'Unit tests' do
+  list:
+    `assert!()`
+    `assert_eq!()`
+
+= slide 'Тестове', 'Unit tests' do
+  example:
+    assert!(1 == 2);
+    assert_eq!(1, 2);
+
+= slide 'Тестове', 'Integration tests' do
+  ' <pre>
+    project
+    ├── src
+    └── tests
+        └── some_test.rs
+
+  list:
+    папка `tests`
+    `extern crate project`
+    не е нужен тест модул
+
+= slide 'Тестове', 'Doc tests' do
+  example:
+    /// Header
+    ///
+    /// ```
+    /// let s = String::new();
+    /// ```
+    struct String;
+
+= slide 'Тестове', 'Doc tests' do
+  list:
+    Rust автоматично добавя `fn main() {}` обвивка около теста
+    `#` скрива част от теста при генериране на документацията
+
+= slide 'Тестове', 'Doc tests types' do
+  list:
+    <code>```ignore</code>
+    <code>```no_run</code>
+
+= slide 'Торба с неща, които ще ви трябват' do
+  img src="images/bag-of-tools.jpg"
+
+= slide 'Итерация с for' do
+  example:
+    for element in collection.into_iter() {
+        //...
+    }
+
+    for element in collection.iter() {
+        //...
+    }
+
+    for element in collection.iter_mut() {
+        //...
+    }
+
+= slide 'Итерация с for', 'Съкратени версии' do
+  example:
+    for element in collection {
+        //...
+    }
+
+    for element in &collection {
+        //...
+    }
+
+    for element in &mut collection {
+        //...
+    }
+
+= slide 'Char/Byte' do
+  example:
+    for element in collection.bytes() {
+        //...
+    }
+
+    for element in collection.chars() {
+        //...
+    }
+
+= slide 'Документация за String, &str, char' do
+  list:
+    <a href="https://doc.rust-lang.org/std/string/struct.String.html">https://doc.rust-lang.org/std/string/struct.String.html</a>
+    <a href="https://doc.rust-lang.org/std/primitive.str.html">https://doc.rust-lang.org/std/primitive.str.html</a>
+    <a href="https://doc.rust-lang.org/std/primitive.char.html">https://doc.rust-lang.org/std/primitive.char.html</a>
+
+= slide 'Първо домашно!' do
+  list:
+    Задача в сайта: <a href="https://fmi.rust-lang.bg/tasks/2">https://fmi.rust-lang.bg/tasks/2</a>
+    Четете внимателно!
+    Ще има тема във форумите за въпроси
+    Ще има прост тест, който да пробвате локално
+    Имате една седмица време: до другата сряда, 23:00
