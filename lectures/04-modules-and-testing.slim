@@ -15,7 +15,7 @@
     let s2 = String::from("Heap-allocated string");
     print_length( /* ??? */ );
 
-    let s3 = s2[14..];
+    let s3 = &s2[14..];
     print_length( /* ??? */ );
 
 = slide 'Отговор' do
@@ -45,7 +45,7 @@
     let s2 = String::from("Heap-allocated string");
     print_length( /* ??? */ );
 
-    let s3 = s2[14..];
+    let s3 = &s2[14..];
     print_length( /* ??? */ );
 
 = slide 'Отговор' do
@@ -61,7 +61,7 @@
     print_length(&s2[..]);
     print_length(&s2);
 
-    let s3 = s2[14..]; // => &str
+    let s3 = &s2[14..]; // => &str
     print_length(s3);
 
 = slide 'Въпрос' do
@@ -183,10 +183,9 @@
             fn connect() { /* ... */ }
 
             fn init() {
-                // извикваме `network::connect()`
-                ::network::connect();
-                super::connect();
-                // network::connect()   // грешка при компилация
+                // извикваме `network::client::connect()`
+                connect();
+                // client::connect()   // грешка при компилация
             }
         }
     }
@@ -455,7 +454,7 @@
     use communicator::client::connect;
     use communicator::network::connect;
 
-    // Compile-time грешка
+    // грешка при компилация
 
 = slide 'Модули', 'конфликти с use' do
   example:
@@ -616,7 +615,9 @@
 
 = slide 'Тестове', 'Doc tests' do
   example:
-    /// Header
+    /// A string.
+    ///
+    /// # Examples
     ///
     /// ```
     /// let s = String::new();
@@ -626,12 +627,12 @@
 = slide 'Тестове', 'Doc tests' do
   list:
     Rust автоматично добавя `fn main() {}` обвивка около теста
-    `#` скрива част от теста при генериране на документацията
+    `#` в началото на реда го скрива при генериране на документацията
 
 = slide 'Тестове', 'Doc tests types' do
   list:
-    <code>```ignore</code>
-    <code>```no_run</code>
+    <code>&#96;&#96;&#96;ignore</code>
+    <code>&#96;&#96;&#96;no_run</code>
 
 = slide 'Торба с неща, които ще ви трябват' do
   img src="images/bag-of-tools.jpg"
@@ -647,20 +648,6 @@
     }
 
     for element in collection.iter_mut() {
-        //...
-    }
-
-= slide 'Итерация с for', 'Съкратени версии' do
-  example:
-    for element in collection {
-        //...
-    }
-
-    for element in &collection {
-        //...
-    }
-
-    for element in &mut collection {
         //...
     }
 
