@@ -1,0 +1,399 @@
+= slide 'Административни неща' do
+  list:
+    Първо домашно!
+    Срок: до сряда
+    Тема във форумите: [https://fmi.rust-lang.bg/topics/20](https://fmi.rust-lang.bg/topics/20)
+    Тест (пуснете си го!): [test_basic.rs](https://github.com/fmi/rust-homework/blob/master/01/test_basic.rs)
+
+= slide 'Преговор' do
+  list:
+    `format!`
+    Модули (`mod`, `pub`, `use`)
+    Файлове (`lib.rs`, `main.rs`)
+    Атрибути (`test`, `derive`, `cfg`)
+    Документация
+    Тестове (unit, integration, doctests)
+    Stuff (итерация, chars)
+
+= slide 'Enums' do
+  example:
+    enum IpAddrKind {
+        V4,
+        V6,
+    }
+
+= slide 'Enums', 'Защо enum?' do
+  list:
+    Ограничен брой варанти за разлика от константите
+    Потребителски тип, обособява вариантите
+    #define е препроцесор
+
+= slide 'Enums', 'инстанциране' do
+  example:
+    let four = IpAddrKind::V4;
+    let six = IpAddrKind::V6;
+
+= slide 'Enums', 'параметър' do
+  example:
+    fn route(ip_type: IpAddrKind) { }
+
+    route(IpAddrKind::V4);
+    route(IpAddrKind::V6);
+
+= slide 'Enums', 'данни' do
+  example:
+    struct IpAddr {
+        kind: IpAddrKind,
+        address: String,
+    }
+
+    let home = IpAddr {
+        kind: IpAddrKind::V4,
+        address: String::from("127.0.0.1"),
+    };
+
+    let loopback = IpAddr {
+        kind: IpAddrKind::V6,
+        address: String::from("::1"),
+    };
+
+= slide 'Enums', 'данни' do
+  p По-удобен и четим начин
+
+  example:
+    enum IpAddr {
+        V4(String),
+        V6(String),
+    }
+
+    let home = IpAddr::V4(String::from("127.0.0.1"));
+
+    let loopback = IpAddr::V6(String::from("::1"));
+
+= slide 'Enums', 'данни' do
+  p Може да спестим памет като знаем че <code>IPv4</code> използва стойности от 0-255
+
+  example:
+    enum IpAddr {
+        V4(u8, u8, u8, u8),
+        V6(String),
+    }
+
+    let home = IpAddr::V4(127, 0, 0, 1);
+
+    let loopback = IpAddr::V6(String::from("::1"));
+
+= slide 'Enums', 'варианти' do
+  example:
+    enum Message {
+        Quit,
+        Move { x: i32, y: i32 },
+        Write(String),
+        ChangeColor(i32, i32, i32),
+    }
+
+= slide 'Enum variants as Structs' do
+  example:
+    struct QuitMessage; // unit struct
+    struct MoveMessage {
+        x: i32,
+        y: i32,
+    }
+    struct WriteMessage(String); // tuple struct
+    struct ChangeColorMessage(i32, i32, i32); // tuple struct
+
+= slide 'Memory layout' do
+  table
+    thead
+      tr
+        th Variant
+        th Discriminant
+        th colspan="12" Data
+      tr
+        th no-mem
+        th {unsigned}
+        th colspan="12" 12 bytes
+    tbody
+      tr
+        td Quit
+        td style="background: #BBE;" 0
+        td colspan="12"
+      tr
+        td Move
+        td style="background: #BBE;" 1
+        td colspan="4" style="background: #EBB;" i32
+        td colspan="4" style="background: #EBB;" i32
+        td colspan="4"
+      tr
+        td Write
+        td style="background: #BBE;" 2
+        td colspan="12" style="background: #EBB;" String
+      tr
+        td ChangeColor
+        td style="background: #BBE;" 3
+        td colspan="4" style="background: #EBB;" i32
+        td colspan="4" style="background: #EBB;" i32
+        td colspan="4" style="background: #EBB;" i32
+
+= slide 'Методи' do
+  example:
+    impl Message {
+        fn call(&self) {
+            // ...
+        }
+    }
+
+    let m = Message::Write(String::from("hello"));
+    m.call();
+
+= slide 'Енумерацията Option' do
+  list:
+    В Rust няма NULL!
+    Понякога искаме да изразим липсваща стойност.
+    Тук идва енумерацията 'Option'
+
+= slide 'Енумерацията Option' do
+  p Option има 2 стойности:
+  list:
+      Some(val)
+      None
+
+= slide 'Енумерацията Option' do
+  example:
+    let some_number = Some(5);
+    let some_string = Some("string")
+    let absent_number: Option<i32> = None;
+
+= slide 'Pattern Matching', 'Съпоставяне на образци' do
+  list:
+      Идея идваща от Функционалното програмиране
+      Може да се ползва с Енумерации и стойности в тях
+      Използва се чрез `match` оператора
+
+= slide 'Pattern Matching', 'Съпоставяне на образци' do
+  example:
+    match x {
+        Some(val) => println!("Value : {}", val),
+        None => println!("No value found"),
+    }
+
+= slide 'Pattern Matching', 'Съпоставяне на образци' do
+  p <code>match</code> може да върне стойност:
+
+  example:
+    let y =
+      match x {
+          Some(val) => Some(val * val),
+          None => None,
+      };
+
+= slide 'Pattern Matching', 'Съпоставяне на образци' do
+  p <code>match</code> може да върне стойност:
+
+  example:
+    let y =
+      match x {
+          Some(val) => val * val,
+          None => 0,
+      };
+
+= slide 'Pattern Matching', 'Съпоставяне на образци' do
+  p <code>match</code> може да излезе от функцията
+
+  example:
+    let y =
+      match x {
+          Some(val) => val * val,
+          None => return None,
+      };
+
+= slide 'Pattern Matching', 'Съпоставяне на образци' do
+  p <code>match</code> може да съдържа блокове от код:
+
+  example:
+    let y =
+      match x {
+        Some(val) => {
+          println!("Will return {}", val * val);
+          Some(val * val)
+        },
+        None => {
+          println!("Will do nothing!!");
+          None
+        },
+      };
+
+= slide 'Pattern Matching', 'Съпоставяне на образци' do
+  p Задължително трябва да се покрият всички случаи!
+
+  example:
+    match x {
+        Some(i) => Some(i + 1),
+    }
+
+  '<pre>
+    error[E0004]: non-exhaustive patterns: `None` not covered
+     -->
+      |
+    6 |         match x {
+      |               ^ pattern `None` not covered
+
+= slide 'Pattern Matching', 'Съпоставяне на образци' do
+  p Работи и с прости стойности:
+  p '_' означава всичко останало
+
+  example:
+    match x {
+        5 => println!("Five"),
+        _ => println!("Not five"),
+    }
+
+
+= slide 'More control flow', 'if let' do
+  p Понякога да използваме <code>match</code> за един случай и да покрием всички други с '_' е прекалено много код
+
+  example:
+    let some_value = Some(0u8);
+    match some_value {
+        Some(3) => println!("three"),
+        _ => (),
+    }
+
+= slide 'More control flow', 'if let' do
+  p Запознайте се с <code>if let</code>:
+
+  example:
+    let some_value = Some(0u8);
+
+    if let Some(3) = some_value {
+        println!("three");
+    }
+
+= slide 'Pattern Matching', 'Guards (допълнителни условия)' do
+  example:
+    let pair = (2, -2); // An example pair
+
+    match pair {
+        (x, y) if x == y => println!("One and the same"),
+        (x, y) if x + y == 0 => println!("Duality"),
+        (x, y) if x % 2 == 1 && y % 2 == 0 => println!("X is ODD and Y is EVEN"),
+        (x, _) if x % 2 == 1 => println!("X is ODD"),
+        _ => println!("Nothing special"),
+    }
+
+= slide 'Pattern Matching', 'ranges' do
+  example:
+    let age: i32 = -5;
+
+    match age {
+        n if n < 0 => println!("I don't exist yet, but will be born after {} years.", n.abs()),
+        0 => println!("I am a newborn."),
+        1 ... 12 => println!("I am a little child"),
+        13 ... 19 => println!("I am a noisy teen"),
+        _ => println!("I am an adult"),
+    }
+
+= slide 'Pattern Matching', 'bindings' do
+  example:
+    let age: i32 = -5;
+
+    match age {
+        n if n < 0 => println!("I don't exist yet, but will be born after {} years.", n.abs()),
+        0 => println!("I am a newborn."),
+        n @ 1 ... 12 => println!("I am a little child of age {}.", n),
+        n @ 13 ... 19 => println!("I am a noisy teen of age {}.", n),
+        n => println!("I am an adult of age {}.", n),
+    }
+
+= slide 'Pattern Matching', 'multiple patterns' do
+  example:
+    let score: u32 = 5;
+
+    match score {
+        0 | 1 => println!("bad score"),
+        _ => println!("good score"),
+    }
+
+= slide 'Pattern Matching', 'structs' do
+  example:
+    struct User {
+        name: &'static str,
+        age: u8
+    }
+
+    let user = User {
+        name: "Andy",
+        age: 12
+    };
+
+    match user {
+        User { name: "Andy", age: _ } => println!("Hello, Andy"),
+        User { name: _, age: 12 } => println!("Hey, kiddo"),
+        User { name: x, .. } => println!("Hi, {}", x),
+        _ => println!("Greetings!")
+    }
+
+= slide 'Destructuring', 'ref' do
+  p Има ли грешка в кода?
+
+  example:
+    #[derive(Debug)]
+    enum Token {
+        Text(String),
+        Number(f64)
+    }
+
+    let token = Token::Text(String::from("The answer is 42"));
+
+    match token {
+        Token::Text(text) => println!("Our token is Text('{}')", text),
+        Token::Number(n) => println!("Our token is Number({})", n),
+    }
+
+    println!("Our token was {:?} after all!", token);
+
+= slide 'Destructuring', 'ref' do
+  p Чрез `ref` стойността няма да се премести.
+
+  example:
+    match token {
+        Token::Text(ref text) => println!("Our token is Text('{}')", text),
+        Token::Number(n) => println!("Our token is Number({})", n),
+    }
+
+= slide 'Destructuring', 'ref' do
+  p Какво всъщност прави ref?
+  p Едно просто обяснение е чрез пример
+
+  example:
+    let x = &1;
+    let ref y = 1;
+
+  list:
+    Двете променливи имат един и същ тип
+    Първият пример взима референция с `&` в *дясната страна* на твърдението
+    Вторият пример взима референция с `ref` в *лявата страна* на твърдението
+    Това е важно, защото в `match` ръкава нямаме достъп до "дясната страна"
+
+= slide 'Destructuring', 'ref mut' do
+  p Може би се досещате?
+
+= slide 'Destructuring', 'ref mut' do
+  example:
+    let mut token = Token::Text(String::from("The answer is 42"));
+
+    match token {
+        Token::Text(ref mut text) => {
+            *text = String::from("Maybe");
+            println!("Our token is Text('{}')", text)
+        },
+        Token::Number(n) => println!("Our token is Number({})", n),
+    }
+
+= slide 'Destructuring', 'let' do
+  example:
+    let (mut a, b) = (1, 2);
+    let User { name: name, ..} = user;
+    let User { name, ..} = user;
+    let Some(val) = Some(5);    // ??
+    let (a, b) = (b, a);        // Please don't use this.. Use mem::swap instead.
