@@ -1,0 +1,500 @@
+= slide 'Преговор' do
+  list:
+    Enum-и, варианти
+    `Option` (`Some`, `None`)
+    Pattern matching (`match`, `if let`, "ръкави")
+    Деструктуриране
+    Деструктуриране без move (`ref`, `ref mut`)
+
+= slide 'Въпроси' do
+  example:
+    enum Act {
+        TooAwesome { name: String, reason: String },
+        Awesome(String),
+        Lame,
+    }
+    fn pass_the_act(_: &Act) { /*...*/ }
+
+    fn main() {
+        let act = Act::Lame;
+        match act {
+            Act::TooAwesome { name, ... } => println!("{} е върхът!", name),
+            Act::Awesome { name }         => println!("{} е супер!", name),
+            Act::Lame                     => println!("Кофти.."),
+        }
+
+        pass_the_act(&act);
+    }
+
+= slide 'Отговори' do
+  example:
+    enum Act {
+        TooAwesome { name: String, reason: String },
+        Awesome(String),
+        Lame,
+    }
+    fn pass_the_act(_: &Act) { /*...*/ }
+
+    fn main() {
+        let act = Act::Lame;
+        match act {
+            Act::TooAwesome { ref name, .. } => println!("{} е върхът!", name),
+            Act::Awesome(ref name)           => println!("{} е супер!", name),
+            Act::Lame                        => println!("Кофти.."),
+        }
+
+        pass_the_act(&act);
+    }
+
+= slide 'Generic Types (Generics)' do
+  '
+
+= slide 'Generic Types (Generics)', 'Oбобщени типове' do
+  p Вече сме ги виждали
+
+  list:
+    `Option<T>`
+    `Vec<T>`
+
+= slide 'Oбобщени типове' do
+  list:
+    Позволяват да пишем код, валиден за различни ситуации
+    Поддържат само типове за разлика от C++ templates
+    Мономорфизация на кода, т.е няма runtime overhead
+
+= slide 'Oбобщени типове', 'функции' do
+  p Със знанията събрани до сега
+
+  example:
+    fn add_i32(a: i32, b: i32) -> i32 {
+        a + b
+    }
+
+    fn add_u8(a: u8, b: u8) -> u8 {
+        a + b
+    }
+
+= slide 'Oбобщени типове', 'функции' do
+  p С обобщени типове
+
+  example:
+    fn add<T>(a: T, b: T) -> T {
+        a + b
+    }
+
+= slide 'Oбобщени типове', 'функции' do
+  p Получаваме
+
+  ' <pre>
+    error[E0369]: binary operation `+` cannot be applied to type `T`
+      |
+    2 |     a + b
+      |     ^^^^^
+      |
+      = note: an implementation of `std::ops::Add` might be missing for `T`
+    </pre>
+
+  p Ще видим как да оправим грешката малко по-късно в презентацията
+
+= slide 'Oбобщени типове', 'структури' do
+  p Нека разгледаме структурата
+
+  example:
+    struct Point<T> {
+        x: T,
+        y: T,
+    }
+
+    fn main() {
+        let integer = Point { x: 5, y: 10 };
+        let float = Point { x: 1.0, y: 4.0 };
+    }
+
+= slide 'Oбобщени типове', 'структури' do
+  p А какво ще стане, ако опитаме да я създадем по този начин?
+
+  example:
+    fn main() {
+        let what_about_this = Point { x: 5, y: 4.0 }; // ??
+    }
+
+= slide 'Oбобщени типове', 'разпознаване на тип' do
+  ' <pre>
+    error[E0308]: mismatched types
+      |
+    9 |     let what_about_this = Point { x: 5, y: 4.0 };
+      |                                            ^^^ expected integral variable,
+                                                       found floating-point variable
+      |
+      = note: expected type `{integer}`
+                 found type `{float}`
+    </pre>
+
+= slide 'Oбобщени типове', 'структури' do
+  p Ако искаме двете координати да могат да са различни типове
+
+  example:
+    struct Point<T, U> {
+        x: T,
+        y: U,
+    }
+
+    fn main() {
+        let both_integer = Point { x: 5, y: 10 };
+        let both_float = Point { x: 1.0, y: 4.0 };
+        let integer_and_float = Point { x: 5, y: 4.0 };
+    }
+
+= slide 'Oбобщени типове', 'енумерации' do
+  p Миналия път разгледахме какво прави <code>Option</code>
+  p Това е дефиницията му:
+
+  example:
+    enum Option<T> {
+        Some(T),
+        None,
+    }
+
+= slide 'Oбобщени типове', 'енумерации' do
+  example:
+    enum Message<T, A> {
+        Text(T),
+        Action(A),
+    }
+
+= slide 'Oбобщени типове', 'методи' do
+  example:
+    struct Point<T> { x: T, y: T }
+
+    // Забележете impl<T>
+    impl<T> Point<T> {
+        fn x(&self) -> &T {
+            &self.x
+        }
+    }
+
+    fn main() {
+        let p = Point { x: 5, y: 10 };
+
+        println!("p.x   = {}", p.x);    // ??
+        println!("p.x() = {}", p.x());  // ??
+    }
+
+= slide 'Oбобщени типове', 'методи' do
+  p Стандартен изход на примера
+
+  ' <pre>
+    p.x   = 5
+    p.x() = 5
+    </pre>
+
+= slide 'Oбобщени типове', 'методи' do
+  p За любознателните - има начин как да се вземе адрес към property-то чрез абсолютен път
+
+  example:
+    println!("p.x = {:x}", Point::<u32>::x as usize);
+    println!("p.x = {:x}", Point::<f64>::x as usize);
+
+  p Turbofish! &rarr; <code>::<></code>
+
+= slide 'Turbofish!' do
+  img src="images/turbofish.jpg"
+
+= slide 'Oбобщени типове', 'специализирани имплементации' do
+  p В този пример само <code>Point&lt;f32&gt;</code> ще притежава този метод
+
+  example:
+    // Този път няма impl<T>
+    impl Point<f32> {
+        fn distance_from_origin(&self) -> f32 {
+            (self.x.powi(2) + self.y.powi(2)).sqrt()
+        }
+    }
+
+= slide 'Oбобщени типове' do
+  example:
+    struct Point<T, U> {
+        x: T,
+        y: U,
+    }
+
+    impl<T, U> Point<T, U> {
+        fn mixup<V, W>(self, other: Point<V, W>) -> Point<T, W> {
+            Point { x: self.x, y: other.y }
+        }
+    }
+
+    fn main() {
+        let p1 = Point { x: 5, y: 10.4 };
+        let p2 = Point { x: "Hello", y: 'c'};
+        let p3 = p1.mixup(p2);
+        println!("p3.x = {}, p3.y = {}", p3.x, p3.y);
+    }
+
+= slide 'Упражнение', 'The JSON encoder' do
+  list:
+    Искаме да си направим логика, която да преобразува Rust данни в JSON.
+    Да речем низа "stuff" трябва да се преобразува до "\"stuff\"".
+    Числото 5 трябва да се преобразува в "5".
+    Ако си дефинираме функция, тя ще изглежда така:
+
+= slide 'Упражнение', 'The JSON encoder' do
+  example:
+
+    fn to_json<T>(val: T) -> String {
+      ...
+    }
+
+  list:
+    Но как да я имплементираме?
+    Какъв тип да е T? Може да е всичко? Ще правиме проверки дали получаваме число или низ?
+    А ако е наш собствен тип?
+
+= slide 'Типажи', 'Traits' do
+  list:
+    Споделенo поведение.
+    Подобни на интерфейси от други езици.
+    И почти същите като type class-овете в един определен език!
+
+= slide 'Типажи', 'Traits' do
+  list:
+    Всъщност ние сме виждали вече trait-ове.
+    Помните ли `{:?}`, когато отпечатваме на екрана?
+    Това има значение за данни от тип, който имплементира trait-а `Debug`.
+    Но нека се върнем на нашия пример с JSON encoder-a.
+
+= slide 'Упражнение', 'The JSON encoder' do
+  p Нека си дефинираме trait ToJSON:
+
+  example:
+    trait ToJSON {
+        fn to_json(&self) -> String;
+    }
+
+= slide 'Упражнение', 'The JSON encoder' do
+  p Сега можем да го имплементираме за някои вградени типове данни:
+
+  example:
+    impl ToJSON for String {
+        fn to_json(&self) -> String {
+            format!("\"{}\"", self)
+        }
+    }
+
+= slide 'Упражнение', 'The JSON encoder' do
+  p Сега можем да го имплементираме за някои вградени типове данни:
+
+  example:
+    impl ToJSON for i32 {
+        fn to_json(&self) -> String {
+            format!("{}", self)
+        }
+    }
+
+    impl ToJSON for f32 {
+        fn to_json(&self) -> String {
+            format!("{}", self)
+        }
+    }
+
+= slide 'Упражнение', 'The JSON encoder' do
+  example:
+    println!("String as json: {}", String::from("mamal").to_json());
+    // String as json: "mamal"
+
+    println!("Number as json: {}", 3.to_json());
+    // Number as json: 3
+
+= slide 'Упражнение', 'The JSON encoder' do
+  p Между другото, можем да имаме имплементация по подразбиране:
+
+  example:
+    trait ToJSON {
+      fn to_json(&self) -> String {
+          String::from("null")
+      }
+    }
+
+    impl ToJSON for () {}
+
+    println!("Unit as json: {}", ().to_json());
+    // Unit as json: null
+
+= slide 'Упражнение', 'The JSON encoder' do
+  p Още малко - за Option!
+
+  example:
+    impl <T> ToJSON for Option<T> where T : ToJSON {
+        fn to_json(&self) -> String {
+            match self {
+                &Some(ref val) => val.to_json(),
+                &None => String::from("null")
+            }
+        }
+    }
+
+= slide 'Упражнение', 'The JSON encoder' do
+  p В JSON има списъци, нека да пробваме да го направим за вектор:
+
+  example:
+    impl <T> ToJSON for Vec<T> where T: ToJSON {
+      fn to_json(&self) -> String {
+          let mut result: String = String::from("");
+          for e in self.iter() {
+              result.push_str(&e.to_json());
+              result.push_str(",");
+          }
+          result.pop();
+
+          format!("[{}]", result)
+      }
+    }
+
+= slide 'Упражнение', 'The JSON encoder' do
+  p В JSON има списъци, нека да пробваме да го направим за вектор:
+
+  example:
+    println!("Vector as json: {}", vec![Some(1.1), Some(2.2), None].to_json());
+    // Vector as json: [1.1, 2.2, null]
+
+= slide 'Упражнение', 'The JSON encoder' do
+  p А сега и за наш си тип:
+
+  example:
+    struct Student {
+        age: i32,
+        full_name: String,
+        number: i32,
+        hobby: Option<String>
+    }
+
+= slide 'Упражнение', 'The JSON encoder' do
+  example:
+    impl ToJSON for Student {
+        fn to_json(&self) -> String {
+            format!(
+                r#"
+                {{
+                    "age": {},
+                    "fullName": {},
+                    "number": {},
+                    "hobby": {}
+                }}"#,
+                self.age.to_json(), self.full_name.to_json(),
+                self.number.to_json(), self.hobby.to_json()
+                )
+        }
+    }
+
+= slide 'Упражнение', 'The JSON encoder' do
+  p Сега можем да си дефинираме функцията, от която почна всичко:
+
+  example:
+    fn to_json<T: ToJSON>(value: T) -> String {
+        value.to_json()
+    }
+
+= slide 'Типажи', 'Traits' do
+  p А ако искаме дадена стойност да имплементира повече от един trait?
+
+  example:
+    fn log_json_transformation<T: ToJSON + Debug>(value: T) {
+        println!("{:?} -> {}", value, value.to_json());
+    }
+
+= slide 'Traits', 'Кога можем да имлементираме trait?' do
+  list:
+   За определена структура може да има само една имплементация на определен trait.
+   За да няма грешки поради имплементации в други библиотеки, има създадени правила.
+
+  p.action Можем да имплементираме trait <code>T</code> за тип <code>S</code> ако:
+  list:
+    trait-a `T` е дефиниран в нашия crate, или
+    типа `S` е дефиниран в нашия crate
+
+= slide 'Traits', 'static dispatch' do
+  list:
+    Всяка имплементация на функцията to_json е отделна версия на функцията.
+    Runtime се извиква правилната функция
+    Това изпълва executable-а с тези дефиниции
+    Тази дефаултна имплементация се нарича мономорфизъм
+
+= slide 'Traits', 'dynamic dispatch' do
+  p Има начин да се използва една версия на функцията и runtime тя да се избира.
+  p Това става с trait обекти - ако имаме trait <code>Stuff</code>, <code>&Stuff</code> да представлява какъвто и да е обект имплементиращ trait-а.
+
+  example:
+    fn to_json(value: &ToJSON) -> String {
+        value.to_json()
+    }
+
+    let trait_object: &ToJSON = &5;
+
+    println!("{}", to_json(trait_object));
+
+    to_json(&5);
+    to_json(&5 as &ToJSON);
+
+= slide 'Traits', 'dynamic dispatch' do
+  list:
+    Сега не изпълваме binary-то с много дефиниции.
+    Runtime нещата са малко по-сложни.
+    Имплементирано е с vtable създаден при компилация.
+    Не от всеки trait може да се направи trait обект.
+
+= slide 'Trait Objects' do
+  p Можем да използваме trait обекти да си направим не-хомогенен вектор, който може да се принтира.
+
+  example:
+    use std::fmt::Debug;
+
+    println!("{:?}", vec![
+        &1.1 as &Debug,
+        &Some(String::from("Stuff")),
+        &3
+    ]);
+
+= slide 'Traits', 'Асоциирани типове' do
+  p Нека си дефинираме trait за събиране:
+
+  example:
+    trait Add<RHS=Self> {
+        type Output;
+
+        fn add(self, rhs: RHS) -> Self::Output;
+    }
+
+= slide 'Traits', 'Асоциирани типове' do
+  example:
+    impl Add for i32 {
+        type Output = i32;
+
+        fn add(self, rhs: i32) -> i32 {
+            self + rhs
+        }
+    }
+
+    impl Add for String {
+        type Output = String;
+
+        fn add(self, rhs: String) -> String {
+            format!("{} {}", self, rhs)
+        }
+    }
+
+= slide 'Traits', 'Асоциирани типове' do
+  p Асоциираният тип ни дава повече възможности.
+  p Да речем резултата от събирането, може да е друг тип:
+
+  example:
+    struct StudentGroup {
+        members: Vec<Student>
+    }
+
+    impl Add for Student {
+        type Output = StudentGroup;
+
+        fn add(self, rhs: Student) -> StudentGroup {
+            StudentGroup { members: vec![self, rhs] }
+        }
+    }

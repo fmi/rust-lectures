@@ -27,3 +27,8 @@
   title: 05. Изброени типове и съпоставяне на образци
   date: 2017-10-20
   slug: 05-enums-and-pattern-matching
+
+6:
+  title: 06. Шаблонни типове, типажи
+  date: 2017-10-25
+  slug: 06-generics-traits
