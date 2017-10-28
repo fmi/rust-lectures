@@ -1,0 +1,307 @@
+= slide 'Административни неща' do
+  list:
+    Домашно 1 приключи
+    1ви ноември (следващата сряда) няма лекция
+    15ти декември, лекцията е в зала 200
+
+= slide 'Преговор' do
+  list:
+    Generics/Обобщени типове (за функции, структури, енумерации)
+    Turbofish!
+    Traits/Типажи
+    Trait objects
+
+= slide 'Гласуване' do
+  p Как да наричаме оператора <code>::</code>?
+  list:
+    четири точки
+    две по две точки
+    scope оператор
+    turbo
+
+= slide 'Домашното' do
+  p Demo
+
+= slide 'Често използвани trait-ове' do
+  list:
+    В стандартната библиотека са дефинирани много често използвани trait-ове
+    Голяма част от rust екосистемата разчита на тях
+    Само ние можем да имплементираме стандартните trait-ове за наши типове
+    Затова е добре да имплементираме всички стандартни trait-ове, които можем
+
+= slide 'Често използвани trait-ове', 'Списък' do
+  ul
+    li <code>Copy</code>
+    li <code>Clone</code>
+    li <code>Eq</code>
+    li <code>PartialEq</code>
+    li <code>Ord</code>
+    li <code>PartialOrd</code>
+    li <code>Hash</code>
+    li <code>Debug</code>
+    li <code>Display</code>
+    li <code>Default</code>
+
+= slide 'Clone' do
+  example:
+    trait Clone {
+        fn clone(&self) -> Self;
+
+        fn clone_from(&mut self, source: &Self) { ... }
+    }
+
+  list:
+    Създава копие на обекта
+    Позволява да си дефинираме собствена логика за копирането
+    Поддържа `#[derive(Clone)]`, ако всички полета имплементират `Clone`
+    derive извиква `clone` на всички полета рекурсивно
+    Рядко ще се налага да правим ръчна имплементация на `Clone`, защото не работим с гола памет!
+
+= slide 'Copy' do
+  example:
+    trait Copy: Clone { }
+
+  list:
+    Marker trait
+    Показва, че стойността може да се копира чрез копиране на паметта бит по бит
+    т.е. `memcopy`
+    Променя се семантиката за присвояване на стойност от преместване (move) на копиране (copy)
+    Supertrait `Clone`
+    Може да се добави с `#[derive(Copy)]`
+
+  p.action Можем да имплементираме <code>Copy</code> само ако:
+  list:
+    всички полета са `Copy`
+    типа няма дефиниран деструктор (т.е. не е `Drop`)
+
+
+= slide 'Drop' do
+  example:
+    pub trait Drop {
+        fn drop(&mut self);
+    }
+
+  list:
+    Позволява да дефинираме деструктори
+    Извиква се когато обекта излезе от scope
+    Не може да се извика ръчно
+    Можем използваме `std::mem::drop` за това
+
+= slide 'Default' do
+  example:
+    trait Default {
+        fn default() -> Self;
+    }
+
+  list:
+    Позволява създаване на обект със стойност по подразбиране
+    Може да се добрави с `#[derive(Default)]`, ако всички полета имплементират `Default`
+    Q: `Default` или `fn new() -> Self`
+    A: и двете
+
+= slide 'Hash' do
+  list:
+    Използва се от типове и функции, които използват хеширане
+    Например ключовете на `HashMap` и `HashSet`
+    Може да се добави с `#[derive(Hash)]`, ако всички полета имплементират `Hash`
+    Няма да показваме ръчна имплементация
+
+= slide 'Display & Debug' do
+  example:
+    struct MagicTrick {
+        description: String,
+        secrets: Vec<String>,
+        skills: Vec<String>
+    }
+
+    let trick = MagicTrick {
+        description: String::from("Изчезваща монета"),
+        secrets: vec![String::from("Монетата се прибира в ръкава")],
+        skills: vec![String::from("Бързи ръце"), String::from("Заблуда")]
+    };
+
+    println!("{}", trick);
+    println!("===");
+    println!("{:?}", trick);
+
+= slide 'Display & Debug' do
+  p Ще очакваме следния изход след като имплементираме <code>Dispay</code> и <code>Debug</code> за </code>MagicTrick</code>
+
+  pre
+    ' Магически трик "Изчезваща монета"
+      ===
+      Трик
+        Описание: "Изчезваща монета"
+        Тайни: ["Монетата се прибира в ръкава"]
+        Умения: ["Бързи ръце", "Заблуда"]
+
+= slide 'Display' do
+  list:
+    Използва се за форматиране на стойност, която ще се показва на потребителя
+    Не може да се derive-не за разлика от `Debug`
+    Използва се от placeholder-a `{}`
+
+= slide 'Display' do
+  example:
+    use std::fmt::{self, Display, Formatter};
+
+    impl Display for MagicTrick {
+        fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+            write!(f, "Магически трик {:?}", self.description)
+        }
+    }
+
+= slide 'Display' do
+  p Нека да разбием примера и да видим какво oзначават новите неща
+
+= slide 'Макрос write' do
+  example:
+    write!(f, "Магически трик {:?}", self.description)
+
+  list:
+    Подобно на `print!` и `format!`
+    Записва форматиран текст в структура, която имплементира Write trait
+
+= slide 'Result' do
+  example:
+    enum Result<T, E> {
+        Ok(T),
+        Err(E),
+    }
+
+  list:
+    Големият брат на `Option<T>`
+    Позволява връщане на резултат с `Ok(T)` или грешка с `Err(E)`
+    Има type alias-и в някои модули, например:
+    `mod fmt { type Result = Result<(), fmt::Error> }`
+    `mod io  { type Result<T> = Result<T, io::Error> }`
+
+= slide 'Display' do
+  example:
+    let trick = MagicTrick {
+        description: String::from("Изчезваща монета"),
+        secrets: vec![String::from("Монетата се прибира в ръкава")],
+        skills: vec![String::from("Бързи ръце"), String::from("Заблуда")]
+    }
+
+    println!("{}", trick);
+
+= slide 'Debug' do
+  list:
+    Използва се за форматиране на стойност, която ще се показва само с цел debug
+    Както знаете `#[derive(Debug)]` имплементира версия по подразбиране
+    Използва се от placeholder-a `{:?}`
+
+= slide 'Debug' do
+  example:
+    use std::fmt::{self, Debug, Formatter};
+
+    impl Debug for MagicTrick {
+        fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+            write! {
+                f,
+                r#"
+                Трик
+                  Описание: {:?}
+                  Тайни {:?}
+                  Умения {:?}
+                "#,
+                self.description,
+                self.secrets,
+                self.skills
+            }
+        }
+    }
+
+= slide 'Display & Debug' do
+  example:
+    let trick = MagicTrick {
+        description: String::from("Изчезваща монета"),
+        secrets: vec![String::from("Монетата се прибира в ръкава")],
+        skills: vec![String::from("Бързи ръце"), String::from("Заблуда")]
+    };
+
+    println!("{}", trick);
+    println!("===");
+    println!("{:?}", trick);
+
+= slide 'Предефиниране на оператори' do
+  p Операторите се дефинират с trait-ове
+  p Видяхме trait-а <code>Add</code>, с който дефинираме оператора <code>+</code>
+
+  example:
+    trait Add<RHS = Self> {
+        type Output;
+
+        fn add(self, rhs: RHS) -> Self::Output;
+    }
+
+= slide 'Предефиниране на оператори', 'Примери' do
+  list:
+    `Add`, `Sub`, `Mul`, `Div`, `Rem`
+    `BitAnd`, `BitOr`, `BitXor`, `Shl`, `Shr`
+    `*Assign`
+    `Neg`, `Not`
+    `Index`
+    `IndexMut`
+
+= slide 'Предефиниране на оператори' do
+  p Demo
+
+= slide 'Предефиниране на оператори', 'Eq' do
+  example:
+    trait PartialEq<Rhs = Self> where Rhs: ?Sized {
+        fn eq(&self, other: &Rhs) -> bool;
+
+        fn ne(&self, other: &Rhs) -> bool { ... }
+    }
+
+  list:
+    Дефинира операторите `==` и `!=`
+    Не е задължително `a == a` да върне `true`
+    `assert_eq!(f64::NAN == f64::NAN, false);`
+
+= slide 'Предефиниране на оператори', 'Eq' do
+  example:
+    trait Eq: PartialEq<Self> { }
+
+  list:
+    Marker trait
+    Задължава `a == a` да е `true`
+
+= slide 'Предефиниране на оператори', 'Ord' do
+  example:
+    trait PartialOrd<Rhs = Self>: PartialEq<Rhs> where Rhs: ?Sized {
+        fn partial_cmp(&self, other: &Rhs) -> Option<Ordering>;
+
+        fn lt(&self, other: &Rhs) -> bool { ... }
+        fn le(&self, other: &Rhs) -> bool { ... }
+        fn gt(&self, other: &Rhs) -> bool { ... }
+        fn ge(&self, other: &Rhs) -> bool { ... }
+    }
+
+    enum Ordering {
+        Less,
+        Equal,
+        Greater,
+    }
+
+= slide 'Предефиниране на оператори', 'Ord' do
+    p Дефинира операторите <code>&lt;</code> <code>&lt;=</code> <code>&gt;</code> <code>&gt;=</code>
+
+    p <code>PartialOrd</code> дефинира частична наредба
+
+    example:
+      assert_eq!(f64::NAN < 0., false);
+      assert_eq!(f64::NAN >= 0., false);
+
+= slide 'Предефиниране на оператори', 'Ord' do
+  example:
+    trait Ord: Eq + PartialOrd<Self> {
+        fn cmp(&self, other: &Self) -> Ordering;
+
+        fn max(self, other: Self) -> Self { ... }
+        fn min(self, other: Self) -> Self { ... }
+    }
+
+  p Дефинира тотална наредба
