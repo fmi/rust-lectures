@@ -1,0 +1,539 @@
+= slide 'Административни въпроси' do
+  list:
+    OpenFest
+
+= slide 'Преговор' do
+  list:
+    Clone, Copy
+    Drop
+    Default
+    Hash
+    Display, Debug
+    Предефиниране на оператори: Add, Mul, PartialEq/Eq, PartialOrd/Ord, etc.
+
+= slide 'Lifetime анотации' do
+  p Внимание: това ще е странно
+
+= slide 'Lifetimes' do
+  example:
+    {
+        let r;
+
+        {
+            let x = 5;
+            r = &x;
+        }
+
+        println!("r: {}", r);
+    }
+
+= slide 'Lifetimes' do
+  ' <pre>
+    error: `x` does not live long enough
+       |
+    6  |         r = &x;
+       |              - borrow occurs here
+    7  |     }
+       |     ^ `x` dropped here while still borrowed
+    ...
+    10 | }
+       | - borrowed value needs to live until here
+    </pre>
+
+= slide 'Lifetimes' do
+  example:
+    {
+        let r;                // -------+-- 'a
+                              //        |
+        {                     //        |
+            let x = 5;        // -+-----+-- 'b
+            r = &x;           //  |     |
+        }                     // -+     |
+                              //        |
+        println!("r: {}", r); //        |
+                              //        |
+    }                         // -------+
+
+= slide 'Lifetimes' do
+  example:
+    {
+        let x = 5;            // -----+-- 'b
+                              //      |
+        let r = &x;           // --+--+-- 'a
+                              //   |  |
+        println!("r: {}", r); //   |  |
+                              // --+  |
+    }                         // -----+
+
+= slide '"Lifetime" vs "Scope"' do
+  example:
+    fn foo() {
+        let mut data = vec!['a', 'b', 'c']; // --+ 'scope
+                                            //   |
+                                            //   |
+        capitalize(&mut data[..]);          //   |
+    //  ^~~~~~~~~~~~~~~~~~~~~~~~~ 'lifetime //   |
+        data.push('d');                     //   |
+        data.push('e');                     //   |
+        data.push('f');                     //   |
+    } // <---------------------------------------+
+
+    fn capitalize(data: &mut [char]) {
+        // do something
+    }
+
+= slide '"Lifetime" vs "Scope"' do
+  example:
+    fn foo() {
+        let mut data = vec!['a', 'b', 'c']; // --+ 'scope
+                                            //   |
+        let slice = &mut data[..];          // --| 'lifetime
+        capitalize(slice);                  //   |
+                                            //   |
+        data.push('d'); // комп. грешка     //   |
+        data.push('e'); // комп. грешка     //   |
+        data.push('f'); // комп. грешка     //   |
+    } // <---------------------------------------+
+
+    fn capitalize(data: &mut [char]) {
+        // do something
+    }
+
+= slide "Функции, които връщат references" do
+  example:
+    fn longest(x: &str, y: &str) -> String {
+        if x.len() > y.len() {
+            String::from(x)
+        } else {
+            String::from(y)
+        }
+    }
+
+    fn main() {
+        let string1 = String::from("abcd");
+        let string2 = "xyz";
+
+        let result = longest(&string1, string2);
+        println!("По-дългия низ е {}", result);
+    }
+
+= slide "Функции, които връщат references" do
+  example:
+    fn longest(x: &str, y: &str) -> &str {
+        if x.len() > y.len() {
+            x
+        } else {
+            y
+        }
+    }
+
+    fn main() {
+        let string1 = String::from("abcd");
+        let string2 = "xyz";
+
+        let result = longest(&string1, string2);
+        println!("По-дългия низ е {}", result);
+    }
+
+= slide "Функции, които връщат references" do
+  ' <pre>
+    error[E0106]: missing lifetime specifier
+       |
+    1  | fn longest(x: &str, y: &str) -> &str {
+       |                                 ^ expected lifetime parameter
+       |
+       = help: this function's return type contains a borrowed value, but the
+       signature does not say whether it is borrowed from `x` or `y`
+    </pre>
+
+= slide "Функции, които връщат references" do
+  example:
+    fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+        if x.len() > y.len() {
+            x
+        } else {
+            y
+        }
+    }
+
+    fn main() {
+        let string1 = String::from("abcd");
+        let string2 = "xyz";
+
+        let result = longest(&string1, string2);
+        println!("По-дългия низ е {}", result);
+    }
+
+= slide "Функции, които връщат references" do
+  example:
+    fn main() {
+        let string1 = String::from("long string is long");
+
+        {
+            let string2 = String::from("xyz");
+            let result = longest(&string1, &string2);
+            println!("The longest string is {}", result);
+        }
+    }
+
+= slide "Функции, които връщат references" do
+  example:
+    fn main() {
+        let string1 = String::from("long string is long");
+        let result;
+        {
+            let string2 = String::from("xyz");
+            result = longest(&string1, &string2);
+        }
+        println!("The longest string is {}", result);
+    }
+
+  ' <pre>
+    error: `string2` does not live long enough
+       |
+    6  |         result = longest(&string1, &string2);
+       |                                     ------- borrow occurs here
+    7  |     }
+       |     ^ `string2` dropped here while still borrowed
+    8  |     println!("The longest string is {}", result);
+    9  | }
+       | - borrowed value needs to live until here
+    </pre>
+
+= slide "Lifetime elision" do
+  p Но ние вече сме виждали функции, които връщат референция
+
+  example:
+    fn first_word(s: &str) -> &str {
+        // код
+    }
+
+  p Защо тогава работеше, а сега не?
+
+= slide "Lifetime elision" do
+  p Горната дефиниция е еквивалентна на:
+  example:
+    fn first_word<'a> (s: &'a str) -> &'a str {
+        // код
+    }
+
+  list:
+    Всяка референция <b>винаги</b> има lifetime
+    Когато ситуацията не е двусмислена, можем да ги пропуснем и компилаторът сам ще ги добави
+    Това се нарича lifetime elision
+
+= slide "Lifetime elision", "Кога трябва да пишем lifetimes?" do
+  p.action Тяло на функция
+  list:
+    никога
+    компилаторът винаги има всичката нужна информация да определи правилния lifetime
+
+  p.action Дефиниция на функция
+  list:
+    понякога
+    тук се прилага lifetime elision
+
+  p.action Структура
+  list:
+     винаги
+
+= slide "Lifetime elision", "Как работи" do
+  p За всеки пропуснат lifetime в аргументите се добавя lifetime параметър
+
+  example:
+    fn print(s: &str);                                  // elided
+    fn print<'a>(s: &'a str);                           // expanded
+
+    fn foo(x: (&u32, &u32), y: usize);                  // elided
+    fn foo<'a, 'b>(x: (&'a u32, &'b u32), y: usize);    // expanded
+
+= slide "Lifetime elision", "Как работи" do
+  p
+    ' Ако за аргументите има само един lifetime параметър (експлицитен или пропуснат),
+      този lifetime се налага на всички пропуснати lifetimes в резултата
+
+  example:
+    fn substr(s: &str, until: usize) -> &str;                         // elided
+    fn substr<'a>(s: &'a str, until: usize) -> &'a str;               // expanded
+
+    fn split_at(s: &str, pos: usize) -> (&str, &str);                 // elided
+    fn split_at<'a>(s: &'a str, pos: usize) -> (&'a str, &'a str);    // expanded
+
+= slide "Lifetime elision", "Как работи" do
+  p
+    ' Ако първият аргумент е <code>&self</code> или <code>&mut self</code>,
+      неговият lifetime се налага на всички пропуснати lifetimes в резултата
+
+  example:
+    fn get_mut(&mut self) -> &mut T;                                // elided
+    fn get_mut<'a>(&'a mut self) -> &'a mut T;                      // expanded
+
+    fn args(&mut self, args: &[T]) -> &mut Self;                    // elided
+    fn args<'a, 'b>(&'a mut self, args: &'b [T]) -> &'a mut Self;   // expanded
+
+= slide "Lifetime elision", "Как работи" do
+  p Във всички останали случаи е грешка да пропуснем lifetime-а.
+
+  example:
+    fn get_str() -> &str;                     // комп. грешка
+    fn longest(x: &str, y: &str) -> &str;     // комп. грешка
+
+
+= slide "Статичен живот" do
+  img src="images/static_life.jpg"
+
+= slide "Статичен живот" do
+  p Специалният lifetime <code>'static</code>
+
+  example:
+    let s: &'static str = "I have a static lifetime.";
+
+  list:
+    Оказва че променливата живее за целия живот на програмата
+    Използва се за константи и статични променливи които са от тип референция
+
+= slide "Kонстанти", "const" do
+  list:
+    Нещо като `#define`, но по-добро
+    Трябва да им се укаже точния тип
+    Не поддържат извиквания на функции или каквито и да е runtime неща
+    По конвенция се именуват с главни букви, цифри и долни черти
+    Важат същите правила за видимост в модули, както останалите неща в езика
+    Имат `'static` lifetime, защото се inline-ват
+
+= slide "Константи", "const" do
+  example:
+    const EULER_NUMBER: f32 = 2.71828;
+    const HI: &str = "hi";                 // &'static str
+    const HI: String = String::from("hi"); // ??
+
+    fn main() {
+        const N: i32 = 7;
+
+        println!("{}", EULER_NUMBER);
+    }
+
+= slide 'Константи', 'Асоциирани константи' do
+  example:
+    struct Foo;
+
+    impl Foo {
+        const N: i32 = 7;
+    }
+
+    fn main() {
+        println!("{}", Foo::N);
+    }
+
+= slide "Статични променливи", "static" do
+  list:
+    Подобни на константите, но не се inline-ват
+    Намират се в binary-то
+    Ако трябва да избирате между двете, по-добре изберете `const`
+    Рядко ще се наложи да ползвате константа с определена памет
+    `const` предразполага за оптимизации
+
+= slide "Статични променливи", "static" do
+  example:
+    static NAME: &str = "Steve";
+    static NAME: &'static str = "Steve";
+
+= slide "Статични променливи", "static mut" do
+  p Можете да направите статичната променлива да е mutable, но има недостатъци
+
+  example:
+    static mut N: i32 = 7;
+
+= slide "Статични променливи", "static mut" do
+  p
+    ' Тъй като може да имате различни нишки които четат или пишат от променливата
+      по едно и също време, за да четете или пишете към нея, трябва да използвате
+      <code>unsafe</code> блок.
+
+  example:
+    fn f() {
+        static mut N: i32 = 7;
+
+        unsafe {
+            N += 1;
+            println!("{}", N);
+        }
+    }
+
+    for i in 0..3 {
+        f();          // ??
+    }
+
+= slide "Референции в структури" do
+  example:
+    struct TextInfo {
+        text: String,
+    }
+
+    impl TextInfo {
+        fn new(text: &str) -> TextInfo {
+            TextInfo {
+                text: String::from(text)
+            }
+        }
+    }
+
+  p Можем ли да избегнем копирането на низа?
+
+= slide "Референции в структури" do
+  p Можем да пробваме със <code>&'static str</code>
+
+  example:
+    struct TextInfo {
+        text: &'static str,
+    }
+
+    impl TextInfo {
+        fn new(text: &str) -> TextInfo {
+            TextInfo { text }
+        }
+    }
+
+    TextInfo::new("баба");          // ?
+
+    let s = String::from("дядо");
+    TextInfo::new(&s);              // ?
+
+= slide "Референции в структури" do
+  p Всъщност не искаме <code>'static</code>, искаме произволен lifetime
+
+  example:
+    struct TextInfo {
+        text: &'a str,
+    }
+
+  pre.action
+    ' error[E0261]: use of undeclared lifetime name `'a`
+      --> src/main.rs:3:16
+        |
+      3 |         text: &'a str,
+        |                ^^ undeclared lifetime
+
+= slide "Референции в структури" do
+  p Трябва да си дефинираме lifetime-а като generic parameter
+
+  example:
+    struct TextInfo<'a> {
+        text: &'a str,
+    }
+
+= slide "Референции в структури" do
+  p Трябва да си дефинираме lifetime-а като generic parameter
+
+  example:
+    struct TextInfo<'a> {
+        text: &'a str,
+    }
+
+  p Съответно трябва да го добавим и на <code>impl</code> блока
+
+  example:
+    impl<'a> TextInfo<'a> {
+        fn new(text: &str) -> TextInfo {
+            TextInfo { text }
+        }
+    }
+
+= slide "Референции в структури" do
+  p Сега вече всичко работи
+
+  example:
+    fn main() {
+        let t1 = TextInfo::new("баба"); // TextInfo<'static>
+
+        let s = String::from("дядо");   // ---+- 'a
+        let t2 = TextInfo::new(&s);     //    |-  TextInfo<'a>
+                                        //    |
+    }                                   // ---+
+
+= slide "Референции в структури" do
+  p Животът на структурата е ограничен до това колко живее обектът, от който сме взели референция
+
+  example:
+    let info;
+
+    {
+        let s = String::from("мой таен низ");   // ---+- 'a
+        info = TextInfo::new(&s);               //    |- TextInfo<'a>
+    }                                           // ---+
+
+    println!("{:?}", info);
+
+= slide "Lifetime elision в impl блок" do
+  p Как се попълват пропуснатите lifetimes за функцията <code>new</code>?
+
+  example:
+    impl<'a> TextInfo<'a> {
+        fn new(text: &str) -> TextInfo {
+        }
+    }
+
+= slide "Lifetime elision в impl блок" do
+  p Expanded
+
+  example:
+    impl<'a> TextInfo<'a> {
+        fn new<'b>(text: &'b str) -> TextInfo<'b> {
+        }
+    }
+
+  list:
+    Алгоритъмът не взима под внимание lifetime-а `'a`
+    Забележете, че пропуснати lifetime параметри на структури се попълват по същия начин като референциите
+
+= slide "Повече референции" do
+  p Какво става ако имаме повече от една референция?
+
+  example:
+    struct TwoRefs<'a, 'b> {
+        text1: &'a str,
+        text2: &'b str,
+    }
+
+    let r;
+    {
+        let second = String::from("second");
+        r = TwoRefs { text1: "first", text2: &second };
+        println!("{}", r.text2);    // ?
+    }
+    println!("{}", r.text1);        // ?
+
+= slide "Повече референции" do
+  p Структурата живее колкото най-малкия lifetime
+  p Затова обикновено е безсмислено да има повече от един lifetime параметър за структура
+
+  example:
+    struct TwoRefs<'a> {
+        text1: &'a str,
+        text2: &'a str,
+    }
+
+    let second = String::from("second");
+    let r = TwoRefs {
+        text1: "first",         // автоматично конвертиране &'static str -> &'a str
+        text2: &second,         // за да съвпадне с lifetime-а на second
+    };
+
+  p Компилаторът автоматично конвертира от по-голям към по-малък lifetime
+
+= slide "Референции и шаблони в структури" do
+  p
+    ' Не на последно място, ако ни се наложи да декларираме lifetimes и generics заедно,
+      редът на декларация е <code>lifetimes</code> преди <code>generics</code>
+
+  example:
+    struct TextInfo<'a, T> {
+        text: &'a str,
+        count: T
+    }
+
+    // Компилационна грешка
+    struct TextInfo<T, 'a> {
+        text: &'a str,
+        count: T
+    }
