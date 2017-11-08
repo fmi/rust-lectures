@@ -1,0 +1,722 @@
+= slide 'Административни неща' do
+  p Второ домашно! Скоро!
+
+= slide 'Въпрос' do
+  p Какви lifetimes трябва да се добавят, за да се компилира?
+
+  example:
+    fn substring_starting_from(text: &str, query: &str) -> &str {
+        match text.find(query) {
+            Some(index) => &text[index..],
+            None => "",
+        }
+    }
+
+    fn main() {
+        let result = substring_starting_from("Едно ферари с цвят #FF0000", "цвят");
+        println!("{}", result);
+
+        let text = String::from("Едно ферари с цвят #FF0000");
+        let result = substring_starting_from(&text, &String::from("цвят"));
+        println!("{}", result);
+    }
+
+= slide 'Отговор' do
+  p Първия аргумент, иначе временния низ като втори гърми
+
+  example:
+    fn substring_starting_from<'a>(text: &'a str, query: &str) -> &'a str {
+        match text.find(query) {
+            Some(index) => &text[index..],
+            None => "",
+        }
+    }
+
+    fn main() {
+        let result = substring_starting_from("Едно ферари с цвят #FF0000", "цвят");
+        println!("{}", result);
+
+        let text = String::from("Едно ферари с цвят #FF0000");
+        let result = substring_starting_from(&text, &String::from("цвят"));
+        println!("{}", result);
+    }
+
+= slide 'Въпрос' do
+  p А ако имаме само статични низове?
+
+  example:
+    fn substring_starting_from(text: &str, query: &str) -> &str {
+        match text.find(query) {
+            Some(index) => &text[index..],
+            None => "",
+        }
+    }
+
+    fn main() {
+        let result = substring_starting_from("Едно ферари с цвят #FF0000", "цвят");
+        println!("{}", result);
+    }
+
+= slide 'Отговор' do
+  p Доста вариации работят (в конкретния случай)
+
+  example:
+    fn substring_starting_from<'a>(text: &'a str, query: &str) -> &'a str {
+    fn substring_starting_from<'a>(text: &'a str, query: &'a str) -> &'a str {
+
+    fn substring_starting_from(text: &'static str, query: &str) -> &'static str {
+    fn substring_starting_from(text: &'static str, query: &'static str) -> &'static str {
+
+    // компилационна грешка:
+    // fn substring_starting_from(text: &str, query: &'static str) -> &'static str {
+
+= slide 'Въпрос' do
+  p А ако не match-ва низа и върнем <code>""</code>?
+
+  example:
+    fn substring_starting_from(text: &str, query: &str) -> &str {
+        match text.find(query) {
+            Some(index) => &text[index..],
+            None => "",
+        }
+    }
+
+    fn main() {
+        let result = substring_starting_from("Едно ферари с цвят #FF0000", "ламборгини");
+        println!("{}", result);
+    }
+
+= slide 'Отговор' do
+  p Същите. Компилатора гледа *всички* варианти на match-а, понеже няма как да знае коя ще е истинската at runtime.
+
+  example:
+    fn substring_starting_from<'a>(text: &'a str, query: &str) -> &'a str {
+    fn substring_starting_from<'a>(text: &'a str, query: &'a str) -> &'a str {
+
+    fn substring_starting_from(text: &'static str, query: &str) -> &'static str {
+    fn substring_starting_from(text: &'static str, query: &'static str) -> &'static str {
+
+    // компилационна грешка:
+    // fn substring_starting_from(text: &str, query: &'static str) -> &'static str {
+
+= slide '(Реторичен) Въпрос' do
+  p Какъв е "правилния начин"? Минимални ограничения
+
+  example:
+    fn substring_starting_from(text: &'a str, query: &str) -> &'a str {
+        match text.find(query) {
+            Some(index) => &text[index..],
+            None => "",
+        }
+    }
+
+= slide 'Преговор', 'Lifetime анотации за функции' do
+  p Връзка между резултата и параметрите
+
+  example:
+    // Резултата е свързан с първия аргумент
+    fn substring_starting_from(text: &'a str, query: &str) -> &'a str {
+
+    // Резултата е свързан и с двата аргумента (може кой да е от двата да е резултат)
+    fn longest(first: &'a str, second: &'a str) -> &'a str {
+
+= slide 'Преговор', 'Lifetime elision' do
+  p За всеки пропуснат lifetime в аргументите се добавя lifetime параметър
+
+  example:
+    fn print(s: &str);                                  // elided
+    fn print<'a>(s: &'a str);                           // expanded
+
+    fn foo(x: (&u32, &u32), y: usize);                  // elided
+    fn foo<'a, 'b>(x: (&'a u32, &'b u32), y: usize);    // expanded
+
+= slide 'Преговор', 'Lifetime elision' do
+  p
+    ' Ако за аргументите има само един lifetime параметър (експлицитен или пропуснат),
+      този lifetime се налага на всички пропуснати lifetimes в резултата
+
+  example:
+    fn substr(s: &str, until: usize) -> &str;                         // elided
+    fn substr<'a>(s: &'a str, until: usize) -> &'a str;               // expanded
+
+    fn split_at(s: &str, pos: usize) -> (&str, &str);                 // elided
+    fn split_at<'a>(s: &'a str, pos: usize) -> (&'a str, &'a str);    // expanded
+
+= slide 'Преговор', 'Lifetime elision' do
+  p
+    ' Ако първият аргумент е <code>&self</code> или <code>&mut self</code>,
+      неговият lifetime се налага на всички пропуснати lifetimes в резултата
+
+  example:
+    fn get_mut(&mut self) -> &mut T;                                // elided
+    fn get_mut<'a>(&'a mut self) -> &'a mut T;                      // expanded
+
+    fn args(&mut self, args: &[T]) -> &mut Self;                    // elided
+    fn args<'a, 'b>(&'a mut self, args: &'b [T]) -> &'a mut Self;   // expanded
+
+= slide 'Преговор', 'Lifetime elision' do
+  p Във всички останали случаи е грешка да пропуснем lifetime-а.
+
+  example:
+    fn get_str() -> &str;                     // комп. грешка
+    fn longest(x: &str, y: &str) -> &str;     // комп. грешка
+
+= slide 'Преговор' do
+  list:
+    Константи (const, static)
+    Референции в структури
+
+= slide 'Конвертиране' do
+  img src="images/universal_converter_box.png"
+
+= slide 'Конвертиране' do
+  example:
+    struct Celsius(f64);
+    struct Fahrenheit(f64);
+    struct Kelvin(f64);
+
+    fn room_temperature() -> Fahrenheit {
+        Fahrenheit(68.0)
+    }
+
+= slide 'Конвертиране' do
+  example:
+    struct Celsius(f64);
+    struct Fahrenheit(f64);
+    struct Kelvin(f64);
+
+    fn room_temperature() -> Fahrenheit {
+        Fahrenheit(68.0)
+    }
+
+    fn energy_to_heat_water(from: Kelvin, to: Kelvin, mass: f64) -> f64 {
+        // whatever
+    }
+
+= slide 'Конвертиране', 'From' do
+  example:
+    impl From<Celsius> for Kelvin {
+        fn from(t: Celsius) -> Kelvin { Kelvin(t.0 + 273.15) }
+    }
+
+    impl From<Fahrenheit> for Celsius {
+        fn from(t: Fahrenheit) -> Celsius { Celsius((t.0 - 32) / 1.8) }
+    }
+
+    impl From<Fahrenheit> for Kelvin {
+        fn from(t: Fahrenheit) -> Kelvin { Kelvin::from(Celsius::from(t)) }
+    }
+
+= slide 'Конвертиране', 'From' do
+  p Сега вече можем да си сварим яйца
+
+  example:
+    let e = energy_to_heat_water(Kelvin::from(room_temperature()), Kelvin::from(Celsius(100.0)), 1.0);
+    println!("Heating water will cost {}J", e);
+
+= slide 'Конвертиране', 'From' do
+  example:
+    pub trait From<T> {
+        fn from(T) -> Self;
+    }
+
+  list:
+    `From<T> for U` конвертира от `T` до `U`
+    `From<T> for T` е имплементирано автоматично
+    Конвертирането не може да се провали
+
+= slide 'Конвертиране', 'Into' do
+  example:
+    pub trait Into<T> {
+        fn into(self) -> T;
+    }
+
+  list:
+    `U::from(t)` е дълго за писане
+    Затова съществува "реципрочен" метод
+    `Into<U> for T` конвертира от `T` до `U`
+    `Into<T> for T` е имплементирано автоматично
+    `Into<U> for T` се имплементира автоматично като имплементираме `From<T> for U`
+    Практиката е ръчно да се имплементира `From`
+
+= slide 'Конвертиране', 'Into' do
+  example:
+    // използвайки From
+    let e = energy_to_heat_water(Kelvin::from(room_temperature()), Kelvin::from(Celsius(100.0)), 1.0);
+
+    // използвайки Into
+    let e = energy_to_heat_water(room_temperature().into(), Celsius(100.0).into(), 1.0);
+
+= slide 'Конвертиране', 'Generics' do
+  p Честа практика е библиотечни функции да не взимат <code>T</code>, а нещо което може да се конвертира до <code>T</code>
+
+  example:
+    fn energy_to_heat_water<T1, T2>(from: T1, to: T2, mass: f64) -> f64  where
+        T1: Into<Kelvin>,
+        T2: Into<Kelvin>
+    {
+        // whatever
+    }
+
+    let e = energy_to_heat_water(room_temperature(), Celsius(100.0), 1.0);
+
+= slide 'Iterator' do
+  example:
+    pub trait Iterator {
+        /// Типа на елементите, по които циклим
+        type Item;
+
+        /// Мърда итератора напред и връща следващата стойност
+        fn next(&mut self) -> Option<Self::Item>;
+
+        // ...
+    }
+
+= slide 'Iterator', 'Fibonacci' do
+  example:
+    pub struct Fibonacci {
+        previous: u32,
+        current: u32,
+    }
+
+    impl Fibonacci {
+        fn new() -> Self {
+            Fibonacci { previous: 1, current: 0 }
+        }
+    }
+
+= slide 'Iterator', 'Fibonacci' do
+  example:
+    impl Iterator for Fibonacci {
+        type Item = u32;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            let next = self.previous + self.current;
+
+            self.previous = self.current;
+            self.current = next;
+
+            Some(next)
+        }
+    }
+
+= slide 'Iterator', 'Fibonacci' do
+  example:
+    fn main() {
+        let mut fibs = Fibonacci::new();
+
+        for n in fibs.take(10) {
+            print!("{}", n);
+        }
+    }
+
+  pre.action
+    ' 1 1 2 3 5 8 13 21 34 55
+
+= slide 'Iterator', 'Fibonacci' do
+  example:
+    fn main() {
+        let fibs = Fibonacci::new();
+        let fibs_vector = fibs.take(10).collect::<Vec<u32>>();
+
+        println!("{:?}", fibs_vector);
+    }
+
+  pre.action
+    ' [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
+
+= slide 'Iterator', 'Fibonacci' do
+  example:
+    fn main() {
+        let fibs = Fibonacci::new().
+            take(10).
+            collect::<Vec<u32>>();
+
+        println!("{:?}", fibs);
+    }
+
+  pre
+    ' [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
+
+= slide 'Iterator', 'TextInfo' do
+  example:
+    pub struct TextInfo<'a> {
+        text: &'a str,
+    }
+
+= slide 'Iterator', 'TextInfo' do
+  example:
+    pub struct TextInfo { /* ... */ }
+
+    struct SentenceIterator<'a> {
+        chars: str::Chars<'a>,
+        in_sentence: bool
+    }
+
+    impl<'a> SentenceIterator<'a> {
+        fn new(s: &'a str) -> Self {
+            Self {
+                chars: s.chars(),
+                in_sentence: false
+            }
+        }
+    }
+
+= slide 'Iterator', 'TextInfo' do
+  example:
+    impl<'a> Iterator for SentenceIterator<'a> {
+        type Item = char;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            for c in &mut self.chars {
+                match c {
+                    '?' | '!' | '.' => if self.in_sentence {
+                        self.in_sentence = false;
+                        return Some(c);
+                    },
+                    _ => if !c.is_whitespace() { self.in_sentence = true; }
+                }
+            }
+            None
+        }
+    }
+
+= slide 'Iterator', 'TextInfo' do
+  example:
+    pub fn emotion(&self) -> String {
+        let mut exclamations = 0;
+        let mut questions = 0;
+        let mut full_stops = 0;
+
+        for c in self.sentence_endings() {
+            match c {
+                '!' => exclamations += 1,
+                '?' => questions    += 1,
+                '.' => full_stops   += 1,
+                _   => panic!(format!("Sentence ending was {}", c))
+            }
+        }
+
+        // ...
+    }
+
+= slide 'Iterator', 'Methods' do
+  p Итераторите поддържат някои известни методи от функционалното програмиране:
+
+  ul
+    li <code>count</code>
+    li <code>enumerate</code>
+    li <code>for_each</code>
+    li <code>map</code>
+    li <code>filter</code>
+    li <code>fold</code>
+    li <code>take</code>
+    li <code>skip</code>
+    li <code>nth</code>
+    li <code>zip</code>
+    li ...
+
+= slide 'Iterator', 'enumerate' do
+  p Използвайте <code>enumerate</code> вместо броячи
+
+  example:
+    for (i, element) in ['a', 'b', 'c'].into_iter().enumerate() {
+        println!("arr[{}] = {}", i, element);
+    }
+
+  pre.action
+    ' arr[0] = a
+      arr[1] = b
+      arr[2] = c
+
+= slide 'Iterator', 'map' do
+  p Приема функция, която преобразува всеки елемент от итератора
+
+  example:
+    fn transform(ch: char) -> char {
+        // Работи правилно само за ascii символи
+        (ch as u8 + 1) as char
+    }
+
+    for element in vec!['a', 'b', 'c'].into_iter().map(transform) {
+        println!("{}", element);
+    }
+
+  pre.action
+    ' b
+      c
+      d
+
+= slide 'Iterator', 'filter' do
+  p Филтрира елементите на итератора, като премахва тези които не отговарят на предиката
+
+  example:
+    fn predicate(num: &u32) -> bool {
+        num.is_power_of_two()
+    }
+
+    for element in vec![1, 2, 3, 4, 5, 6, 7, 8].into_iter().filter(predicate) {
+        println!("{}", element);
+    }
+
+  pre.action
+    ' 1
+      2
+      4
+      8
+
+= slide 'Iterator', 'fold' do
+  p 'Смачква' стойностите на итератора в една
+
+  example:
+    fn multiply(acc: u32, num: u32) -> u32 {
+        acc * num
+    }
+
+    let factorial = vec![1, 2, 3, 4].into_iter().fold(1, multiply);
+
+    println!("{}", factorial);
+
+  pre.action
+    ' 24
+
+= slide 'Iterator', 'closures' do
+  p Естествено има по-лесен начин за използване, чрез closures
+
+= slide 'Iterator', 'closures' do
+  example:
+    for element in vec![5, 10, 15].into_iter().map(|x| x/5) {
+        println!("{}", element);
+    }
+
+  pre.action
+    ' 1
+      2
+      3
+
+= slide 'Iterator', 'Мързеливост' do
+  p Итераторите са мързеливи, т.е не правят нищо докато не извикваме финализираща функция или <code>next</code>
+
+= slide 'Iterator', 'Мързеливост' do
+  example:
+    fn main() {
+        [1, 2, 3, 4].into_iter().take(10);
+    }
+
+  pre
+    ' warning: unused `std::iter::Take` which must be used:
+      iterator adaptors are lazy and do nothing unless consumed
+      --> src/main.rs:2:5
+        |
+      2 |     [1, 2, 3, 4].into_iter().take(10);
+        |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        |
+        = note: #[warn(unused_must_use)] on by default
+
+= slide 'Iterator', 'Мързеливост' do
+  ul
+    li <code>next</code>
+    li <code>collect</code>
+    li <code>fold</code>
+    li ...
+
+= slide 'Специални итератори' do
+  list:
+    <code>IntoIterator</code>
+    <code>ExactSizeIterator</code>
+    <code>DoubleEndedIterator</code>
+
+= slide 'IntoIterator' do
+  example:
+    pub trait IntoIterator {
+        /// Типа на елементите, по които циклим
+        type Item;
+
+        /// В какъв итератор го превръщаме?
+        type IntoIter: Iterator<Item=Self::Item>;
+
+        /// Създаваме итератор от стойност
+        fn into_iter(self) -> Self::IntoIter;
+    }
+
+= slide 'IntoIterator' do
+  p Имплементиран е за всички типове които имплементират <code>trait Iterator</code>
+
+  example:
+    impl<I: Iterator> IntoIterator for I {
+        type Item = I::Item;
+        type IntoIter = I;
+
+        fn into_iter(self) -> I {
+            self
+        }
+    }
+
+= slide 'IntoIterator' do
+  p Но защо?? 🤔
+
+= slide 'IntoIterator', 'for-loop' do
+  div style="display: flex; flex-direction: row; justify-content: center"
+    div style="width: 100%; padding: 10px; border-right: 1px solid gray;"
+      example:
+        let values = vec![1, 2, 3, 4, 5];
+
+        for x in values {
+            println!("{}", x);
+        }
+    div style="width: 100%; padding: 10px 10px 10px 40px;"
+      example:
+        let values = vec![1, 2, 3, 4, 5];
+
+        {
+            let mut iter = IntoIterator::into_iter(values);
+            loop {
+                match iter.next() {
+                    Some(val) => {
+                        let x = val;
+                        { println!("{}", x); };
+                    }
+                    None => break,
+                };
+            }
+        }
+
+= slide 'IntoIterator', 'Fibonacci' do
+  example:
+    // Нека предположим, че някаква библиотека ни е дала тази структура
+    // и числата в нея са коректни
+    struct FibNums(u32, u32);
+
+    impl IntoIterator for FibNums {
+        type Item = u32;
+        type IntoIter = Fibonacci;
+
+        fn into_iter(self) -> Self::IntoIter {
+            Fibonacci {
+                previous: self.0,
+                current: self.1
+            }
+        }
+    }
+
+= slide 'IntoIterator', 'Fibonacci' do
+  p Тогава може да започнем цикъла от определени числа.
+
+  example:
+    for n in FibNums(5, 8).into_iter().take(10) {
+        println!("{}", n);
+    }
+
+= slide 'IntoIterator', 'Fibonacci' do
+  p
+    ' Горният пример може да се постигне и с нормален from конструктор, но
+      нямаше да може да се изпълни следният код:
+
+  example:
+    for n in FibNums(5, 8) {
+        println!("{}", n);
+    }
+
+  p Kакво ще направи този пример?
+
+= slide 'IntoIterator', 'Fibonacci' do
+  p Ще принтира числа докато не получим
+
+  pre
+    thread 'main' panicked at 'attempt to add with overflow'
+
+= slide 'IntoIterator' do
+  list:
+    Интересно...
+    ... или пък не чак толкова
+    Нека видим по-полезни примери
+
+= slide 'IntoIterator', 'Vector' do
+  example:
+    impl<T> IntoIterator for Vec<T>
+    impl<'a, T> IntoIterator for &'a Vec<T>
+    impl<'a, T> IntoIterator for &'a mut Vec<T>
+
+  p Тези имплементации ще връщат съответно
+
+  example:
+    fn into_iter(self) -> std::vec::IntoIter<T>
+    fn into_iter(self) -> std::slice::Iter<'a, T>
+    fn into_iter(self) -> std::slice::IterMut<'a, T>
+
+  p
+    ' Всяка от структурите съдържа указатели към текущите елементи.
+      Вътрешно <code>into_iter</code> за <code>Iter</code> и <code>IterMut</code> използва функциите
+      <code>iter</code> и <code>iter_mut</code> които са ограничени от lifetimes,
+      затова итераторите не живеят по-дълго от вектора.
+
+= slide 'IntoIterator', 'Vector' do
+  div style="display: flex; flex-direction: row; justify-content: center"
+    div style="width: 100%; padding: 10px; border-right: 1px solid gray;"
+      example:
+        for element in vec.into_iter() {}
+        for element in vec.iter() {}
+        for element in vec.iter_mut() {}
+    div style="width: 100%; padding: 10px 10px 10px 40px;"
+      example:
+        for element in vec {}
+        for element in &vec {}
+        for element in &mut vec {}
+
+= slide 'ExactSizeIterator' do
+  p Някои итератори знаят колко пъти ще итерират
+
+  example:
+    pub trait ExactSizeIterator: Iterator {
+        fn len(&self) -> usize { ... }
+        fn is_empty(&self) -> bool { ... }
+    }
+
+= slide 'ExactSizeIterator' do
+  p Например всяка крайна област знае колко пъти ще се итерира
+
+  example:
+    let five = 0..5;
+
+    assert_eq!(5, five.len());
+
+= slide 'DoubleEndedIterator' do
+  p Понякога са ни известни двата края на итератора и съответно може да итерираме и от двете страни
+
+  example:
+    pub trait DoubleEndedIterator: Iterator {
+        fn next_back(&mut self) -> Option<Self::Item>;
+
+        fn rfind<P>(&mut self, predicate: P) -> Option<Self::Item>
+        where
+            P: FnMut(&Self::Item) -> bool,
+        { ... }
+    }
+
+= slide 'DoubleEndedIterator' do
+  p Един такъв пример са векторите
+
+  example:
+    let numbers = vec![1, 2, 3, 4];
+
+    let mut iter = numbers.into_iter();
+
+    assert_eq!(Some(1), iter.next());
+    assert_eq!(Some(4), iter.next_back());
+    assert_eq!(Some(3), iter.next_back());
+    assert_eq!(Some(2), iter.next());
+    assert_eq!(None, iter.next());
+    assert_eq!(None, iter.next_back());
+
+= slide 'DoubleEndedIterator' do
+  p Този тип итератор ни позволява да използваме rev метода на Iterator
+
+  example:
+    let a = vec![1, 2, 3];
+
+    let mut iter = a.into_iter().rev();
+
+    assert_eq!(iter.next(), Some(3));
+    assert_eq!(iter.next(), Some(2));
+    assert_eq!(iter.next(), Some(1));
+    assert_eq!(iter.next(), None);
