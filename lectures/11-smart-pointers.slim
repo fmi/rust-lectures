@@ -1,0 +1,599 @@
+= slide 'Административни неща' do
+  p Второ домашно! Отложено до понеделник!
+
+= slide 'Преговор' do
+  list:
+    Парсене на низове в други типове с `FromStr` и `parse`
+    Справяне с грешки с `Result`
+    Макроса `try!` и по-удобния му вариант `?`
+    Panic!
+    Четене и писане на файлове (или файлоподобни неща)
+
+= slide 'Smart pointers' do
+  '
+
+= slide 'Box' do
+  example:
+    fn main() {
+        let b = Box::new(5);
+        println!("b = {}", b);
+    }
+
+    5
+
+= slide 'Box' do
+  example:
+    fn main() {
+        let x = Box::new(3);
+        let y = Box::new(5);
+
+        println!("{}", x + y);
+    }
+
+  ' <pre>
+    error[E0369]: binary operation `+` cannot be applied to type `std::boxed::Box<{integer}>`
+    --> src/main.rs:5:23
+      |
+    5 |     println!("{:#?}", x + y);
+      |                       ^^^^^
+      |
+      = note: an implementation of `std::ops::Add` might be missing for `std::boxed::Box<{integer}>`
+    </pre>
+
+= slide 'Box' do
+  example:
+    fn main() {
+        let x = Box::new(3);
+        let y = Box::new(5);
+
+        println!("{}", *x + *y);
+    }
+
+  ' <pre>
+    8
+    </pre>
+
+= slide 'Box' do
+  example:
+    use std::mem::size_of_val;
+
+    fn main() {
+        let v = vec!["baba", "dyado"];
+        println!("v       = {:?}", v);
+        println!("size(v) = {:?}", size_of_val(&v));
+
+        println!("-----------------------------");
+
+        let bv = Box::new(vec!["baba", "dyado"]);
+        println!("bv        = {:?}", bv);
+        println!("size(bv)  = {:?}", size_of_val(&bv));
+        println!("size(*bv) = {:?}", size_of_val(&*bv));
+    }
+
+= slide 'Box' do
+  ' <pre>
+    v       = ["baba", "dyado"]
+    size(v) = 24
+    -----------------------------
+    bv        = ["baba", "dyado"]
+    size(bv)  = 8
+    size(*bv) = 24
+    </pre>
+
+= slide 'Box' do
+  p А за какво ни е всъщност?
+
+= slide 'Box', 'Linked list' do
+  example:
+    #[derive(Debug)]
+    enum List {
+        Nil,
+        Cons(i32, List),
+    }
+
+    use List::{Cons, Nil};
+
+    fn main() {
+        let list = Cons(1, Cons(2, Cons(3, Nil)));
+
+        println!("{:#?}", list);
+    }
+
+= slide 'Box', 'Linked list' do
+  ' <pre>
+    error[E0072]: recursive type `List` has infinite size
+    --> src/main.rs:2:1
+      |
+    2 | enum List {
+      | ^^^^^^^^^ recursive type has infinite size
+    3 |     Nil,
+    4 |     Cons(i32, List),
+      |               ----- recursive without indirection
+      |
+      = help: insert indirection (e.g., a `Box`, `Rc`, or `&`) at some point to make `List` representable
+    </pre>
+
+= slide 'Box', 'Linked list' do
+  example:
+    #[derive(Debug)]
+    enum List {
+        Nil,
+        Cons(i32, Box<List>),
+    }
+
+    use List::{Cons, Nil};
+
+    fn main() {
+        let list = Cons(1, Box::new(Cons(2, Box::new(Cons(3, Box::new(Nil))))));
+        println!("{:?}", list);
+    }
+
+    Cons(1, Cons(2, Cons(3, Nil)))
+
+= slide 'Box', 'Trait objects' do
+  example:
+    fn vec_of_things<'a>() -> Vec<&'a Display> {
+        let x = 123;
+        vec![&x, &3.14, &"foobar"]                              // грешка при компилация
+    }
+
+    fn vec_of_things() -> Vec<Box<Display>> {
+        let x = 123;
+        vec![Box::new(x), Box::new(3.14), Box::new("foobar")]   // ok
+    }
+
+= slide 'Box', 'Trait objects' do
+  p <code>Box&lt;Error&gt;</code> - ако ни мързи да правим error handling
+
+  example:
+    fn get_x() -> Result<i32, io::Error> { ... }
+    fn get_y() -> Result<i32, fmt::Error> { ... }
+
+    fn foo() -> Result<i32, Box<error::Error>> {
+        let x = get_x()?;
+        let y = get_y()?;
+        Ok(x + y)
+    }
+
+= slide 'Nightly Rust' do
+  list:
+    В nightly rust има експериментален синтаксис
+    Можете да си инсталирате nightly rust с `rustup install nightly`
+    Можете да си тествате код с `rustup run nightly cargo run`
+    Можете и да го направите default-ен
+
+= slide 'Box', 'Nightly features' do
+  p Има специален keyword : `box` за създаване на Box smart pointer-и
+
+  example:
+    let x = Box::new(5);
+    let list = Cons(1, Box::new(Cons(2, Box::new(Cons(3, Box::new(Nil))))));
+
+    // Може да се напише така:
+    let x = box 5;
+    let list = Cons(1, box Cons(2, box Cons(3, box Nil)));
+
+= slide 'Box', 'Nightly features' do
+  p За да може да използвате този 'feature', трябва да го оповестите така в началото на програмата си:
+
+  example:
+    #![feature(box_syntax)]
+
+    enum Fruit {
+      Apple,
+      Orange,
+      Tomato,
+      Cherry
+    }
+
+    fn main() {
+      let apple_in_a_box = box Fruit::Apple;
+    }
+
+= slide 'Box', 'Nightly features' do
+  p Ключовата дума `box` е мнооого полезна при pattern matching! Пример:
+
+  example:
+    #[derive(Clone, Debug, PartialEq)]
+    pub enum Term {
+        True,
+        False,
+        If(Box<Term>, Box<Term>, Box<Term>),
+        Value
+    }
+
+= slide 'Box', 'Nightly features' do
+  example:
+    fn one_step_eval(t: Term) -> Result<Term, String> {
+        match t {
+            If(t1, t2, t3) => {
+                match *t1 { // След малко ще си говорим за Deref, спокойно!
+                    True => Ok(*t2),
+                    False => Ok(*t3),
+                    _ => Ok(If(Box::new(one_step_eval(*t1)?), t2, t3)),
+                }
+            },
+            any => Err(format!("Term can't be evaluated : {:?}", any))
+        }
+    }
+
+= slide 'Box', 'Nightly features' do
+  p Ключовата дума `box` е мнооого полезна при pattern matching! Пример:
+
+  example:
+    fn one_step_eval(t: Term) -> Result<Term, String> {
+        match t {
+            If(box True, t2, _) => Ok(*t2),
+            If(box False, _, t3) => Ok(*t3),
+            If(t1, t2, t3) => Ok(If(box one_step_eval(*t1)?), t2, t3),
+            any => Err(format!("Term can't be evaluated : {:?}", any))
+        }
+    }
+
+= slide 'Box', 'Nightly features' do
+  p За да може да използвате този 'feature', трябва да го оповестите така в началото на програмата си:
+
+  example:
+    #![feature(box_patterns)]
+
+
+= slide 'Deref' do
+  example:
+    let mut x = 5;
+    {
+        let y = &mut x;
+
+        *y += 1
+    }
+
+= slide 'Deref' do
+  example:
+    pub trait Deref {
+        type Target: ?Sized;
+        fn deref(&self) -> &Self::Target;
+    }
+
+= slide 'Deref', '?Sized ???' do
+  list:
+    `Sized` е магически trait
+    Имплементира се автоматично от типове, чиито размер се знае at compile-time
+    Примерно: `u8`, `Vec<T>`, `&T`
+
+= slide 'Deref', '?Sized ???' do
+  list:
+    Типове, които не са `Sized`: `[T]`, `Trait`
+    Винаги стоят зад някакъв pointer: `&[T]`, `Box<[T]>`, `&Trait`, `Box<Trait>`
+
+= slide 'Deref', '?Sized ???' do
+  p <code>?Sized</code> означава, че типа <strong>не е нужно</strong> да имплементира Sized.
+
+  example:
+    fn foo<T>() {} // Използваем само с тип, който имплементира Sized
+
+    fn bar<T: ?Sized>() {} // Използваем с тип, който *може* да имплементира Sized, но не е *нужно*
+
+  p Особено ограничение, понеже <em>разширява</em> броя типове, които могат да се приемат, вместо да го стеснява.
+
+= slide 'Deref' do
+  example:
+    use std::ops::Deref;
+
+    struct Mp3 {
+        audio: Vec<u8>,
+        artist: Option<String>,
+        title: Option<String>,
+    }
+
+    impl Deref for Mp3 {
+        type Target = Vec<u8>;
+
+        fn deref(&self) -> &Vec<u8> {
+            &self.audio
+        }
+    }
+
+= slide 'Deref' do
+  example:
+    fn main() {
+        let my_favorite_song = Mp3 {
+            audio: vec![1, 2, 3],
+            artist: Some(String::from("Poets of the Fall")),
+            title: Some(String::from("Carnival of Rust")),
+        };
+
+        assert_eq!(vec![1, 2, 3], *my_favorite_song);
+    }
+
+= slide 'Deref' do
+  example:
+    *my_favorite_song
+
+    *(my_favorite_song.deref())
+
+    fn deref(&self) -> &Vec<u8> {
+        &self.audio
+    }
+
+    *(&my_favorite_song.audio)
+
+= slide 'Deref', 'deref coercion' do
+  example:
+    fn compress_mp3(audio: &[u8]) -> Vec<u8> {
+        // ...
+    }
+
+    compress_mp3(my_favorite_song.audio.as_slice()
+
+= slide 'Deref', 'deref coercion' do
+  p <code>&[u32; 5]</code> &rarr; <code>&[u32]</code>
+  p <code>&Vec&lt;u32&gt;</code> &rarr; <code>&[u32]</code>
+  p <code>&String</code> &rarr; <code>&str</code>
+
+= slide 'Deref', 'deref coercion' do
+  example:
+    fn compress_mp3(audio: &[u8]) -> Vec<u8> {
+        // ...
+    }
+
+    compress_mp3(my_favorite_song.audio.as_slice())
+    // &Vec<u8> -> &[u8]
+    compress_mp3(&my_favorite_song.audio)
+    // &Mp3 -> &Vec<u8>
+    compress_mp3(&my_favorite_song)
+
+= slide 'Deref', 'deref coercion' do
+  list:
+    От `&T` до `&U` когато `T: Deref<Target=U>`
+    От `&mut T` до `&mut U` когато `T: DerefMut<Target=U>`
+    От `&mut T` до `&U` когато `T: Deref<Target=U>`
+
+= slide 'Deref' do
+  list:
+    Цялата тая имплицитност е много удобна, но...
+    Не прекалявайте. `Deref` се ползва *специфично* за smart pointer-и.
+    `Mp3` е симпатичен пример, но автоматичен дереф може да е доста объркващ в случай на грешка.
+
+= slide 'Reference counting' do
+  example:
+    use std::rc::Rc;
+
+    fn main() {
+        let first = Rc::new(String::from("foobar"));
+        let second = Rc::clone(&first);
+
+        println!("{}", first);
+        println!("{}", second);
+    }
+
+  pre
+    ' foobar
+      foobar
+
+= slide 'Reference counting' do
+  example:
+    let a = Rc::new(3);
+    let b = Rc::new(5);
+
+    println!("{}", *a + *b);
+
+= slide 'Reference counting' do
+  example:
+    let mut a = Rc::new(3);
+
+    *a = 5;
+
+    println!("{:?}", a);
+
+= slide 'Reference counting' do
+  pre
+    ' error[E0594]: cannot assign to immutable borrowed content
+      --> src/main.rs:6:5
+        |
+      6 |     *a = 5;
+        |     ^^^^^^ cannot borrow as mutable
+
+= slide 'Reference counting' do
+  list:
+    `Rc` не ни позволява да взимаме mutable reference към пазената стойност
+    това би нарушило ограничението за един `&mut T` / много `&T`
+    но въпреки това има начини да модифицираме пазената стойност
+
+= slide 'Cow' do
+  example:
+    use std::rc::Rc;
+
+    fn main() {
+        let mut a = Rc::new(3);
+
+        *Rc::make_mut(&mut a) = 5;
+
+        println!("a: {}", a);
+    }
+
+  pre.action
+    ' a: 5
+
+= slide 'Cow' do
+  example:
+    use std::rc::Rc;
+
+    fn main() {
+        let mut a = Rc::new(3);
+        let b = Rc::clone(&a);
+
+        *Rc::make_mut(&mut a) = 5;
+
+        println!("a: {}", a);
+        println!("b: {}", b);
+    }
+
+  pre.action
+    ' a: 5
+      b: 3
+
+= slide 'Cow' do
+  img src="images/cow.jpg"
+
+= slide 'Cow', 'Copy on Write' do
+  example:
+    impl<T> Rc<T> where T: Clone {
+        fn make_mut(this: &mut Rc<T>) -> &mut T
+    }
+
+  list:
+    ако сме единствения собственик модифицираме директно пазената стойност
+    ако не първо си правим копие на стойността и модифицираме копието
+
+= slide 'Internal mutability' do
+  list:
+    пазим състояние (internal state), невидимо за външния свят
+    искаме да модифицираме това състояние в методи, които са логически immutable
+    това се нарича internal mutability
+
+= slide 'Internal mutability' do
+  example:
+    use std::cell::Cell;
+
+    fn main() {
+        // забележете, че няма `mut`
+        let cell = Cell::new(10);
+
+        println!("{}", cell.get());
+
+        cell.set(42);
+        println!("{}", cell.get());
+    }
+
+  pre
+    ' 10
+      42
+
+= slide 'Internal mutability', 'Cell' do
+  list:
+    използва се основно за `Copy` типове
+    `get` прави копие на пазената стойност
+    `set` презаписва пазената стойност с новата
+    не можем да вземем референция (`&`/`&mut`) към стойността
+
+= slide 'Internal mutability' do
+  example:
+    use std::cell::RefCell;
+
+    fn main() {
+        let cell = RefCell::new(String::from("foo"));   // отново няма `mut`
+        println!("{}", cell.borrow());
+
+        {
+            let mut r = cell.borrow_mut();
+            r.push_str("bar");
+        }
+
+        println!("{}", cell.borrow());
+    }
+
+  pre
+    ' foo
+      foobar
+
+= slide 'Internal mutability', 'RefCell' do
+  list:
+    run time borrow checker
+    помни колко immutable и mutable референции е раздал
+    `borrow()` ще върне структура, която има deref до `&T`
+    `borrow_mut()` ще върне структура, която има deref до `&mut T`
+    ако не можем да вземем референция ще получим `panic!`
+
+= slide 'Internal mutability' do
+  p Често `Cell` и `RefCell` се използват в комбинация с `Rc`
+
+  example:
+    use std::cell::RefCell;
+    use std::rc::Rc;
+
+    fn main() {
+        let first = Rc::new(RefCell::new(String::from("foo")));
+        let second = Rc::clone(&first);
+
+        first.borrow_mut().push_str("bar");
+
+        println!("{}", second.borrow());
+    }
+
+  pre
+    ' foobar
+
+= slide 'Weak reference' do
+  example:
+    struct TreeNode {
+        index: u32,
+        parent: Option<Rc<RefCell<TreeNode>>>,
+        children: Vec<Rc<RefCell<TreeNode>>>,
+    }
+
+    impl TreeNode {
+        fn new(index: u32, parent: Option<Rc<RefCell<TreeNode>>>) -> Rc<RefCell<TreeNode>> {
+            Rc::new(RefCell::new(TreeNode { index, parent, children: vec![] }))
+        }
+    }
+
+= slide 'Weak reference' do
+  example:
+    fn make_tree() -> Rc<RefCell<TreeNode>> {
+        let root = TreeNode::new(0, None);
+        let v1 = TreeNode::new(1, Some(Rc::clone(&root)));
+        let v2 = TreeNode::new(2, Some(Rc::clone(&root)));
+
+        {
+            let mut r = root.borrow_mut();
+            r.children.push(v1);
+            r.children.push(v2);
+        }
+
+        root
+    }
+
+    let tree = make_tree();
+    mem::drop(tree);          // ?
+
+= slide 'Weak reference' do
+  list:
+    получаваме цикъл от референции
+    което води до изтичане на памет
+
+
+= slide 'Weak reference', 'Sidenote' do
+  list:
+    забележете, че можем да имаме memory leak в safe code
+    затова съществува безопасната функция `mem::forget`
+    и затова нямаме гаранция че деструкторите ще се извикат
+
+= slide 'Weak reference' do
+  p Да се върнем на проблема с дървото
+
+  list:
+    искаме родителят да е собственик на децата
+    не искаме детето да е собственик на родителя
+    за това се използват силни и слаби референции
+
+= slide 'Weak reference' do
+  example:
+    use std::mem;
+    use std::rc::{Rc, Weak};
+
+    fn main() {
+        let rc = Rc::new(10);
+        let weak = Rc::downgrade(&rc);
+
+        println!("{:?}", weak.upgrade());
+
+        mem::drop(rc);
+        println!("{:?}", weak.upgrade());
+    }
+
+  pre.action
+    ' Some(10)
+      None
+
+= slide 'Container cheat sheet' do
+  a target="_blank" href="https://docs.google.com/presentation/d/1q-c7UAyrUlM-eZyTo1pd8SZ0qwA_wYxmPZVOQkoDmH4/edit"
+    img src="images/container_cheat_sheet.svg" height="500px"
