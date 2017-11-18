@@ -1,0 +1,584 @@
+= slide 'Административни неща' do
+  p Второ домашно! Отложено до понеделник!
+
+= slide 'Разширен преговор' do
+  p Умни указатели, умно обяснени?
+
+= slide '&T' do
+  p Най-глупавия указател, но важен за целите на сравнението
+
+  img src="images/reference.png"
+
+= slide '&T' do
+  list:
+    Най-простия начин да реферираме към памет, където и да е в паметта (който не изисква `unsafe`)
+    Няма ownership -- нещо друго трябва да е owner на тази памет
+    Нужда от жонглиране на lifetimes
+    Позволяват изключителна ефективност
+
+= slide '&T' do
+  example:
+    let potato = String::from("
+        Любов, любов, варен картоф,
+        разрежеш го, а той суров.
+    ");
+
+    let lines = potato.
+        trim().
+        lines().
+        map(|l| l.trim());
+
+    for line in lines {
+        println!("{}", line);
+    }
+
+= slide 'Box' do
+  p Също толкова глупав, но има ownership
+
+  img src="images/box.png"
+
+= slide 'Box' do
+  list:
+    Също прост -- сочи към парцал памет, само и единствено в heap-а
+    Има ownership, което значи, че няма нужда да се грижим за lifetimes
+    Много условно казано, горе-долу, донякъде, може да си представите, че:
+    `String` ~~ `Box<str>`
+    `Vec<T>` ~~ `Box<[T]>`
+
+= slide 'Rc' do
+  p Умничък
+
+  img src="images/rc.png"
+
+= slide 'Rc' do
+  example:
+    let gosho_source = "Гошо, Гошо, скочи лошо";
+    let shared_gosho = Rc::new(gosho_source); // shared_gosho { strong = 1, weak = 0 };
+
+    let bratcheda = Rc::clone(&shared_gosho); // shared_gosho { strong = 2, weak = 0 };
+    // или, shared_gosho.clone(), но първото е по-ясно
+
+    let slabichko = Rc::downgrade(&shared_gosho); // shared_gosho { strong = 2, weak = 1 };
+    println!("{:#?}", Weak::upgrade(&slabichko)); // => Some("Гошо, Гошо, скочи лошо")
+                                                  // shared_gosho { strong = 3, weak = 1 };
+                                                  // shared_gosho { strong = 2, weak = 1 };
+
+    std::mem::drop(bratcheda); // shared_gosho { strong = 1, weak = 1 };
+    std::mem::drop(shared_gosho); // shared_gosho { strong = 0, weak = 1 }; => DROP!
+
+    println!("{:#?}", Weak::upgrade(&slabichko)); // => None
+
+= slide 'Rc' do
+  example:
+    // Инициализираме споделената стойност
+    let gosho_source = "Гошо, Гошо, скочи лошо";
+    let shared_gosho = Rc::new(gosho_source); // Rc<&str>
+
+    let bratcheda = Rc::clone(&shared_gosho); // Rc<&str>
+
+    let slabichko = Rc::downgrade(&shared_gosho); // Weak<&str>
+    println!("{:#?}", Weak::upgrade(&slabichko)); // Option<Rc<&str>>
+
+= slide 'Rc', '(Holy) Cow' do
+  example:
+    fn main() {
+        let mut a = Rc::new(3);
+        let b = Rc::clone(&a);
+
+        {
+            let mut_ref_a = Rc::make_mut(&mut a); // &mut i32
+            // създава се чисто нова "вътрешна" стойност, към която сочи a,
+            // с извикване на `clone()`
+            *mut_ref_a = 5;
+        }
+
+        println!("a: {}", a);
+        println!("b: {}", b);
+    }
+
+  pre.action
+    ' a: 5
+      b: 3
+
+= slide 'Rc' do
+  list:
+    Рядко ще го използвате, за доста специфични неща.
+    На практика, ви дава глобални, споделени стойности.
+    Винаги предпочитайте локалност. По-лесно се мисли за нея
+
+= slide 'Cell, RefCell' do
+  img src="images/cell.png"
+
+= slide 'Cell' do
+  example:
+    use std::cell::Cell;
+
+    fn main() {
+        // забележете, че няма `mut`
+        let cell = Cell::new(10);
+
+        println!("{}", cell.get());
+
+        cell.set(42);
+        println!("{}", cell.get());
+    }
+
+  pre
+    ' 10
+      42
+
+= slide 'RefCell' do
+  example:
+    use std::cell::RefCell;
+
+    fn main() {
+        let cell = RefCell::new(String::from("foo"));   // отново няма `mut`
+        println!("{}", cell.borrow());
+
+        {
+            let mut r = cell.borrow_mut();
+            r.push_str("bar");
+        }
+
+        println!("{}", cell.borrow());
+    }
+
+  pre
+    ' foo
+      foobar
+
+= slide 'Cell, RefCell' do
+  list:
+    Заобикалят "нормалните" правила, съответно ги избягвайте.
+    Документацията казва: "... interior mutability is something of a last resort."
+    Една мъдра книжка казва: "RefCells make everything sadness."
+
+= slide 'Deref' do
+  p Айде пак звездички и амперсанди.
+
+= slide 'Deref' do
+  p <code>Deref</code> и <code>DerefMut</code> правят две неща:
+
+  list:
+    Добавят метод `deref/deref_mut`
+    Добавят `*`, ако няма
+    `*` не е `deref`
+
+= slide 'Deref' do
+  p
+    ' Deref не връща T, защото това би ни дало ownership над стойността и в случая на Box<T>, това
+      ще премести стойноста и ще направи инстанцията неизползваема.
+
+  example:
+    pub trait Deref {
+        type Target: ?Sized;
+        fn deref(&self) -> &Self::Target; // => винаги връща reference!
+    }
+
+= slide 'Deref' do
+  example:
+    fn is_ref<T: ?Sized + Any>(_s: &T) -> bool {
+        TypeId::of::<&i32>() == TypeId::of::<&T>()
+    }
+
+    println!("{}", is_ref(&1));
+    println!("{}", is_ref((&1).deref()));
+    println!("{}", is_ref(Box::new(1).deref()));
+
+    // println!("{}", is_ref(*(&1)));
+    // println!("{}", is_ref(*Box::new(1)));
+
+= slide 'Deref' do
+  p Като говорим за присвояване
+
+  example:
+    let a = &mut 1;
+
+    a = 2 // Това не става, не може да присвоим T на &mut T
+    a.deref_mut() = 2; // Същото
+    a.deref_mut() = &mut 2; // Емиииии.. не
+
+    *a = 2; // Това ще е то
+
+    let mut a = a; // deref_mut взима &mut self
+
+    *(a.deref_mut()) = 2; // Това е идентитет след което го дереференцираме
+
+= slide 'Deref' do
+  p
+    ' Върху типове указатели (<code>&T</code>, <code>&mut T</code>, <code>*const T</code>, <code>*mut T</code>)
+      оператора <code>*</code> дереференцира указателя -- дава ни истинската стойност, и ни позволява да я манипулираме
+
+  p
+    ' Това поведение е дефинирано от компилатора и не може да се променя
+
+  example:
+    let x: &T;
+    let y = *x;       // T
+
+    let x: &&T;
+    let y = *x;       // &T
+    let y = **x;      // T
+
+= slide 'Deref' do
+  p
+    ' Върху типове, които не са указатели и за които е дефиниран <code>Deref</code> се извиква функцията <code>deref</code>
+      по следния начин
+
+  example:
+    impl Deref for T {
+        type Target = U;
+
+        fn deref(&self) -> &U { ... }
+    }
+
+    let x: T;
+    let y = *x;
+
+    // това се превежда до
+    let y = *Deref::deref(&x); // => *&U == U
+
+= slide 'Deref', 'Пример' do
+  example:
+    let x: T;
+    let y = x.deref();        // &U
+    let y = *(x.deref());     // U
+    let y = *x;               // U
+
+    let x: &T;
+    let y = *x;               // T
+    let y = **x;              // U
+
+= slide 'Deref', 'DerefMut' do
+  p Прилага се по същият начин като <code>Deref</code>
+  p Използва се за mutable операции, като <code>*x = val;</code>
+
+  example:
+    trait DerefMut: Deref {
+        fn deref_mut(&mut self) -> &mut Self::Target;
+    }
+
+= slide 'Deref' do
+  p Може да си ги мислите като lvalue и rvalue от C++
+
+  example:
+    let a = &1;
+
+    let b = *a;     // ок
+    *a = 2;         // комп. грешка, не е mutable reference
+
+
+    let a = &mut 1;
+
+    let b = *a;     // ок
+    *a = 2;         // ok
+
+= slide 'Deref' do
+  p Същото нещо работи и ако използваме <code>Deref</code>
+
+  example:
+    let a = Box::new(1);
+
+    let b = *a;     // ок, deref от Box<i32> до i32
+    *a = 2;         // комп. грешка, не държи box-а mutably
+
+
+    let mut a = Box::new(1);
+
+    let b = *a;     // ок, deref от Box<i32> до i32
+    *a = 2;         // ок, deref_mut от Box<i32> до i32
+
+= slide 'Deref' do
+  p Същият код, разписан
+
+  example:
+    let a = Box::new(1);
+
+    let b = *(Deref::deref(&a));
+    *(DerefMut::deref_mut(&mut a)) = 2;   // cannot borrow as mutable
+
+
+    let mut a = Box::new(1);
+
+    let b = *(Deref::deref(&a));
+    *(DerefMut::deref_mut(&mut a)) = 2;
+
+= slide 'Deref' do
+  p Това е overload само за <strong>custom types</strong> и по-точно типове, които имат поведение на указатели.
+
+= slide 'Raw pointers' do
+  p Ок, нека видим и как изглеждат указателите
+
+  example:
+    let raw_const_ptr: *const u32 = &1 as *const u32;
+    let raw_mut_ptr: *mut u32 = &mut 1 as *mut u32;
+
+    // Coercion
+    let raw_const_ptr: *const u32 = &1;
+    let raw_mut_ptr: *mut u32 = &mut 1;
+
+= slide 'Raw pointers' do
+  p Първо и най-важно правило - указателите са safe, докато не се опитаме да четем или пишем в тях
+
+  example:
+    let raw_const_ptr: *const u32 = &1;
+    let raw_mut_ptr: *mut u32 = &mut 1;
+
+    unsafe {
+        println!("{}", *raw_const_ptr);
+    }
+
+    // За разлика от псевдонимите, указателите могат да са null или dangling pointers
+    unsafe {
+        *raw_mut_ptr += 1;
+    }
+
+= slide 'Raw pointers' do
+  p Нямат Deref и DerefMut. Тук компилатора си има само вградения оператор за това.
+
+  example:
+    // no method named `deref` found for type `*const u32` in the current scope
+    (&1 as *const u32).deref();
+
+= slide 'Raw pointers', 'Някои полезни методи' do
+  list:
+    `is_null(self) -> bool`
+    `unsafe fn as_ref<'a>(self) -> Option<&'a T>`
+    `unsafe fn offset(self, count: isize) -> *const T`
+
+= slide 'Coercions', 'Types' do
+  p "Coercion" се случва за тези типове:
+
+  list:
+    Reference to reference, pointer to pointer
+    `&mut T` to `&T`
+    `*mut T` to `*const T`
+    Reference to pointer
+    `&T` to `*const T`
+    `&mut T` to `*mut T`
+    Deref coercion
+    `&T` to `&U` if `T` implements `Deref<Target = U>`
+    `&mut T` to `&mut U` if `T` implements `DerefMut<Target = U>`
+    и други, които може да си прочете от...
+
+= slide 'Coercions', 'Свеждане' do
+  p <a href="https://doc.rust-lang.org/beta/reference/type-coercions.html">https://doc.rust-lang.org/beta/reference/type-coercions.html</a>
+  p Прочетете си това, по-подробно е
+
+= slide 'Coercions', 'Свеждане' do
+  p Това не е inference! Това е имплицитно определяне на тип, когато знаем експлицитно към какъв тип се стремим.
+
+= slide 'Coercions', 'Пример' do
+  p Свеждания които сме срещали досега
+
+  example:
+    fn uses_num(num: &i32) { ... }
+
+    let x = 10;
+    uses_num(&x);
+    uses_num(&&&&x);                          // &&&&i32 -> &i32
+
+= slide 'Coercions', 'Deref Coercion' do
+  p Имплицитно добавя извиквания на <code>deref</code> / <code>deref_mut</code>
+
+  example:
+    let boxed_num = Box::new(12);
+
+    let x = &boxed_num;                       // x: &Box<i32>
+    let x: &i32 = &boxed_num;                 // &Box<i32> -> &i32
+    let x: &i32 = Deref::deref(&boxed_num);   // expanded
+
+= slide 'Coercions', 'Deref Coercion' do
+  p Имплицитно добавя извиквания на <code>deref</code> / <code>deref_mut</code>
+
+  example:
+    fn uses_num(num: &i32) { ... }
+
+    let boxed_num = Box::new(12);
+
+    let x = &boxed_num;                   // x: &Box<i32>, inference
+    uses_num(x);                          // &Box<i32> -> &i32
+    uses_num(Deref::deref(x));            // expanded
+
+    uses_num(&boxed_num);                 // &Box<i32> -> &i32
+    uses_num(Deref::deref(&boxed_num));   // expanded
+
+= slide 'Coercions', 'Deref Coercion' do
+  p Свеждането е транзитивно
+
+  example:
+    fn print_bytes(bytes: &[u8]) { ... }
+
+    // използваме типа Mp3 от миналата лекция,
+    // който имаше дефиниран Deref до Vec<u8>
+    let song = Mp3 { ... };
+
+    print_bytes(&song);                   // &Mp3 -> &Vec<u8> -> &[u8]
+    print_bytes(song.deref().deref());    // expanded
+
+= slide 'Coercions', 'Deref Coercion' do
+  ul
+    li Deref coercion от <code>T</code> до <code>U</code> позволява извикване на методи дефинирани за <code>U</code>
+    li <code>Deref</code> позволява методи взимащи <code>&self</code>
+    li <code>DerefMut</code> позволява методи взимащи <code>&mut self</code>
+    li вижте документацията на String, където ще намерите "Methods from Deref&lt;Target = str&gt;"
+
+  example:
+    let mut song = Mp3 { ... };
+
+    song.push(42);
+    Vec::push(song.deref_mut(), 42);      // expanded
+
+    song.first();
+    <[u8]>::first(song.deref().deref());  // expanded
+
+= slide 'HashMap' do
+  p Нека да освежим малко, че все пак е петък
+
+= slide 'HashMap' do
+  example:
+    struct HashMap<K, V> { /* fields omitted */ }
+
+  list:
+    Прилича много на `Vec` от към методи
+    Добра е за големи ключове
+    Съществуват и 3rd party crates които предоставят други видове `Map`-ове
+    Погледнете документацията
+
+= slide 'HashMap' do
+  p Изисква ключа да имплементира <code>Hash + Eq</code>
+
+  example:
+    impl<K: Hash + Eq, V> HashMap<K, V> { /* ... */}
+
+= slide 'HashMap', 'Hash' do
+  example:
+    #[derive(Hash, PartialEq, Eq)]
+    struct MyStruct { /* ... */ }
+
+= slide 'HashMap', 'Добавяне на елементи' do
+  example:
+    // Типът ще бъде <&str, &str>
+    let mut book_reviews = HashMap::new();
+
+    book_reviews.insert("Adventures of Huckleberry Finn",    "My favorite book.");
+    book_reviews.insert("Grimms' Fairy Tales",               "Masterpiece.");
+    book_reviews.insert("Pride and Prejudice",               "Very enjoyable.");
+    book_reviews.insert("The Adventures of Sherlock Holmes", "Eye lyked it alot.");
+
+= slide 'HashMap' do
+  example:
+    if !book_reviews.contains_key("Les Misérables") {
+        println!("We've got {} reviews, but Les Misérables ain't one.", book_reviews.len());
+    }
+
+= slide 'HashMap', 'Премахване на елементи' do
+  example:
+    // Прекалени много правописни грешки, нека го махнем.
+    book_reviews.remove("The Adventures of Sherlock Holmes");
+
+= slide 'HashMap', 'Взимане на стойност по ключ' do
+  example:
+    let to_find = ["Pride and Prejudice", "Alice's Adventure in Wonderland"];
+    for book in &to_find {
+        match book_reviews.get(book) {
+            Some(review) => println!("{}: {}", book, review),
+            None => println!("{} is unreviewed.", book)
+        }
+    }
+
+= slide 'HashMap', 'Итериране' do
+  example:
+    // Итериране по ключ-стойност двойките
+    for (book, review) in &book_reviews {
+        println!(r#"{}: "{}""#, book, review);
+    }
+
+= slide 'HashMap', 'Entry' do
+  example:
+    use std::collections::HashMap;
+
+    let mut map: HashMap<&str, u32> = HashMap::new();
+    // Добавя poneyland => 22, защото няма такова
+    map.entry("poneyland").or_insert(12);
+
+    assert_eq!(map["poneyland"], 12);
+
+    *map.entry("poneyland").or_insert(15) += 10;
+
+    println!("poneyland => {}", map["poneyland"]); // ??
+
+  p.action Poneyland => 22
+
+= slide 'HashMap', 'Borrow' do
+  example:
+    let mut book_reviews = HashMap::new();
+
+    book_reviews.insert("Adventures of Huckleberry Finn",    "My favorite book.");
+    book_reviews.insert("Grimms' Fairy Tales",               "Masterpiece.");
+    book_reviews.insert("Pride and Prejudice",               "Very enjoyable.");
+    book_reviews.insert("The Adventures of Sherlock Holmes", "Eye lyked it alot.");
+
+= slide 'HashMap', 'Borrow' do
+  p Така изглежда <code>get</code>. Подобно е за <code>Index</code>
+
+  example:
+    pub fn get<Q: ?Sized>(&self, k: &Q) -> Option<&V> where K: Borrow<Q>, Q: Hash + Eq
+
+= slide 'HashMap', 'Borrow' do
+  p Това ни позволява да правим неща като
+
+  example:
+    book_reviews.get("Adventures of Huckleberry Finn");
+    book_reviews.get(String::from("Grimms' Fairy Tales"));
+
+= slide 'HashMap', 'Borrow' do
+  p Това е заради <code>Borrow</code> trait-a
+
+  example:
+    trait Borrow<Borrowed: ?Sized> {
+        fn borrow(&self) -> &Borrowed;
+    }
+
+= slide 'HashMap', 'Borrow' do
+  example:
+    use std::borrow::Borrow;
+
+    fn check<T: Borrow<str>>(s: T) {
+        assert_eq!("Hello", s.borrow());
+    }
+
+    let s = String::from("Hello");
+    check(s);
+
+    let s = "Hello";
+    check(s);
+
+= slide 'AsRef' do
+  p Има и нещо подобно
+
+  example:
+    trait AsRef<T: ?Sized> {
+        fn as_ref(&self) -> &T;
+    }
+
+    trait Borrow<Borrowed: ?Sized> {
+        fn borrow(&self) -> &Borrowed;
+    }
+
+= slide 'AsRef' do
+  p Защо?
+
+= slide 'AsRef' do
+  p Семантично са различни
+
+  list:
+    AsRef се използва за конвертиране на псевдоними
+    Borrow се използва за приемане на тип, който да се заеме като псевдоним от определен тип
+
+= slide 'AsRef' do
+  example:
+    let s = String::from("hi");
+    let r: &String = &s;
+    let r: &[u8] = s.as_ref();
+    let r: &str = s.as_ref();
