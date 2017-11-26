@@ -1,0 +1,121 @@
+= slide 'Learning Rust With Entirely Too Many Linked Lists' do
+  ul
+    li
+      a href="http://cglab.ca/~abeinges/blah/too-many-lists/book/README.html"
+        ' Оригиналния източник
+
+    li
+      a href="https://github.com/rust-unofficial/too-many-lists/tree/master/lists"
+        ' Пълния код
+
+    li Тези слайдове ще съдържат само кратки обобщения на интересни части от кода.
+
+= slide 'std::mem::replace' do
+  p Удобна функция, която ни позволява да разменим две стойности:
+
+  example:
+    use std::mem;
+
+    let head = mem::replace(&mut self.head, Link::Empty)
+
+  ul
+    li Първия аргумент е mutable reference, той се променя.
+    li Втория аргумент е стойността, която записваме в него. Тя се move-ва.
+    li Резултата е старата стойност на първия аргумент.
+    li По този начин, нищо не се деинициализира, "вземаме" стойността на <code>self.head</code>, като слагаме някаква "празна" стойност като заместител.
+
+= slide 'Option::take' do
+  p По-четим и удобен за използване вариант на предната функция за <code>Option</code>
+
+  example:
+    let head = self.head.take();
+
+    // Превежда се отдолу до:
+    let head = Option::take(&mut self.head);
+    let head = std::mem::replace(&mut self.head, None);
+
+  p Трябва <code>self</code> да е взето или като <code>mut self</code>, или <code>&mut self</code>
+
+= slide 'map & as_ref' do
+  p Метода <code>map</code> се използва често когато имаме <code>Option</code>:
+
+  ul
+    li Ако стойността е <code>None</code>, просто не вика функцията/closure-а.
+    li Ако стойността е <code>Some(val)</code>, вика функцията върху <code>val</code> и я пакетира отново в `Some`.
+
+  example:
+    pub fn peek(&self) -> Option<&T> {
+        self.head.as_ref().map(|node| &node.elem)
+    }
+
+  p Map обаче взема ownership! Метода <code>as_ref</code> Конвертира <code>Option&lt;T&gt;</code> в <code>Option&lt;&amp;T&gt;</code>, което ни позволява да достъпим вътрешната стойност по reference (ако изобщо има такава).
+
+= slide 'Итерация по reference' do
+  p Итерирането по този начин включва вземане на вътрешния <code>&amp;Node</code> изпод Box-а. Това може да изглежда объркващо...
+
+  example:
+    pub fn iter(&self) -> Iter<T> {
+        Iter {
+            current: self.head.as_ref().map(|node| &**node),
+        }
+    }
+
+  p Винаги трябва да мислим за типовете! В случая имаме:
+
+  example:
+    Option<Box<Node<T>>> // в списъка.
+    Option<&Node<T>>     // в итератора. Не искаме Box, защото не искаме ownership
+
+= slide 'Итерация по reference' do
+  example:
+    // self.head: Option<Box<Node<T>>>
+    // current:   Option<&Node<T>>
+    let current = self.head.as_ref().map(|node| &**node);
+
+    // node:    &Box<Node<T>>
+    // *node:   *&Box<Node<T>> -> Box<Node<T>>
+    // **node:  *Box<Node<T>> -> *&Node<T> -> Node<T>
+    // &**node: &Node<T>
+
+  p Алтернативно, функцията <code>Box::as_ref</code> ни дава същия процес с по-малко perl-like код:
+
+  example:
+    let mut current = self.head.as_ref().map(|node| Box::as_ref(node));
+
+    // Или, за по-кратко:
+    let mut current = self.head.as_ref().map(Box::as_ref);
+
+= slide 'Итерация по mutable reference' do
+  example:
+    let mut current = self.head.as_mut().map(|node| &mut **node);
+    // Или
+    let mut current = self.head.as_mut().map(Box::as_mut);
+
+  p Благодарение на всичките safety check-ове, спокойно можем и да си вземем mutable reference, с почти същия код.
+
+= slide 'Не е нужно да се ползва map' do
+  p Тези три имплементации на <code>peek</code> са еквивалентни:
+
+  example:
+    pub fn peek(&self) -> Option<&T> {
+        self.head.as_ref().map(|node| &node.elem)
+    }
+
+    pub fn peek(&self) -> Option<&T> {
+        match self.head {
+            None => None,
+            Some(ref node) => Some(&node.elem)
+        }
+    }
+
+    pub fn peek(&self) -> Option<&T> {
+        let node = self.head.as_ref()?;
+        Some(&node.elem)
+    }
+
+= slide 'Не е нужно да се ползва map' do
+  p Дали ще ползвате map, експлицитен pattern-matching, или <code>?</code> оператора е предимно въпрос на предпочитание. Не всички варианти са използваеми на всички места, разбира се.
+
+  p Напълно е възможно да започнете с експлицитен pattern-matching, и да видите, че можете да си опростите кода значително с един map. Или да "извадите" стойност от option рано в метода и оттам нататък да работите безопасно с нея.
+
+  p Експериментирайте, за да откриете с какво се чувствате най-комфортни. Правете го редовно -- силно е вероятно предпочитанията ви да се променят с времето.
