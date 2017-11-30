@@ -1,0 +1,651 @@
+= slide 'Административни неща' do
+  list:
+    Видеото няма да го бъде
+    Трето домашно, довечера!
+
+= slide 'Преговор' do
+  list:
+    Списъци!
+    Едносвързан списък-стек с Box-ове
+    Persistent списък със споделени Rc-та
+    Mutable double-ended опашка
+    Unsafe едносвързана опашка
+
+= slide 'Итератори' do
+  p Ще разгледаме част от домашното и как можете да го правите с итератори
+
+= slide 'Итератори' do
+  p За контекст така изглежда структурата <code>Polynomial</code>
+
+  example:
+    pub struct Polynomial {
+        /// x^3 + 2*x^2 + 3
+        /// vec![1.0, 2.0, 0.0, 3.0]
+        coefs: Vec<f64>
+    }
+
+    impl Polynomial {
+        fn new() -> Self {
+            Self {
+                coefs: Vec::new()
+            }
+        }
+    }
+
+= slide 'Итератори', 'Умножение на полиноми' do
+  example:
+    fn mul(self, other: Self) -> Self::Output {
+        // Allocations can be optimized significantly
+        other.coefs.into_iter().rev().enumerate().fold(Polynomial::new(), |acc, (i, coef)| {
+            let base = self.clone();
+            base.coefs.resize(self.coefs.len() + i, 0.0);
+
+            acc + base * coef
+        })
+    }
+
+= slide 'Итератори', 'Събиране на полиноми' do
+  example:
+    fn add(self, other: Self) -> Self::Output {
+        if self.coefs.len() == 0 { return other; }
+        if other.coefs.len() == 0 { return self; }
+
+        let endless_zero = ::std::iter::repeat(0.0);
+        let rev_self = self.coefs.iter().rev();
+        let rev_other = other.coefs.iter().rev();
+
+        // Pad the coefs with 0s to align them
+        let mut coefs = if self.coefs.len() < other.coefs.len() {
+            rev_self.chain(endless_zero).zip(rev_other).map(|(x, y)| x + y).collect::<Vec<_>>()
+        } else {
+            rev_self.zip(rev_other.chain(endless_zero)).map(|(x, y)| x + y).collect::<Vec<_>>()
+        };
+
+        // Can't use rev on the map iterator since Chain is not ExactSizeIterator
+        // and Repeat is not a DoubleEndedIterator
+        coefs.reverse();
+
+        Polynomial::from(coefs)
+    }
+
+= slide 'Итератори', 'Интерполация' do
+  example:
+    pub fn interpolate(points: Vec<(f64, f64)>) -> Option<Self> {
+        // Skipping validations
+
+        // Split the points into `x` set and `y` set
+        let (xs, ys): (Vec<f64>, Vec<f64>) = points.into_iter().unzip();
+
+        // `zero` can be substituted by `new` for performance but this is closer to valid math
+        let poly = ys.into_iter().enumerate().fold(Polynomial::zero(), |acc, (i, y)| {
+            // Skip calculations when multiplication with 0 is expected
+            if y < ::std::f64::EPSILON {
+                return acc;
+            }
+
+            // Calculate Lagrange basis polynomial
+            let basis = xs.iter().enumerate().fold(Polynomial::one(), |acc, (j, x)| {
+                if i == j {
+                    acc
+                } else {
+                    // (x - xj) / (xi - xj)
+                    acc * (Polynomial::from(vec![1.0, -x]) / (xs[i] - x))
+                }
+            });
+
+            acc + basis * y
+        });
+
+        Some(poly)
+    }
+
+= slide 'Функции' do
+  p Знаем как се пишат функции
+  example:
+    fn add_one (x: u32) -> u32 {
+        x + 1
+    }
+
+  p Но какъв е типът на функция
+  example:
+    let _: () = add_one;
+
+= slide 'Функции', 'указатели' do
+  p <code>fn(u32) -> u32 {main::add_one}</code>
+
+  list:
+    Всяка функция има уникален тип
+    Не можем да го напишем (невалиден синтаксис)
+    Защо?
+    Никаква идея. Не се използва за нищо
+
+= slide 'Функции', 'указатели' do
+  p Какво се използва?
+
+  list:
+    `fn(u32) -> u32`
+    function pointer
+    non null
+    cast to `*const ()` and `usize`
+
+= slide 'Функции', 'указатели' do
+  example:
+    fn add_one (x: u32) -> u32 { x + 1 }
+    fn add_two (x: u32) -> u32 { x + 2 }
+
+    let mut f: fn(u32) -> u32 = add_one;
+    assert_eq!(f(1), 2);
+
+    f = add_two;
+    assert_eq!(f(1), 3);
+
+= slide 'Closures', 'syntax' do
+  example:
+    fn  add_one_v1   (x: u32) -> u32 { x + 1 }
+    let add_one_v2 = |x: u32| -> u32 { x + 1 };
+    let add_one_v3 = |x|             { x + 1 };
+    let add_one_v4 = |x|               x + 1  ;
+
+= slide 'Closure vs fn' do
+  p Каква е разликата между функция и closure.
+
+  p Closures могат да използват променливи дефинирани по-горе в scope-a.
+
+  example:
+    fn main() {
+        let other = String::from("дядо");               // <-+
+                                                        //   |
+        Some("баба").map(|s| s.len() + other.len());    // --+
+    }
+
+= slide 'Имплементация' do
+  example:
+    /// Структура в която запомняме променливите, които сме прихванали
+    struct State {
+        other: String,
+    }
+
+    impl State {
+        /// Функция която съдържа логиката
+        fn call(&self, s: &str) -> usize {
+            s.len() + self.other.len()
+        }
+    }
+
+= slide 'Имплементация' do
+  example:
+    fn map_option(opt: Option<&str>, f: State) -> Option<usize> {
+        match opt {
+            Some(s) => Some(f.call(s)),
+            None => None,
+        }
+    }
+
+    fn main() {
+        let other = String::from("дядо");
+
+        map_option(Some("баба"), State { other });
+    }
+
+= slide 'Move closure' do
+  p Една подробност - closure-ите не консумират прихванатите променливи
+
+  example:
+    let other = String::from("дядо");
+
+    println!("{}", Some("баба").map(|s| s.len() + other.len()));
+    println!("{}", other);    // Ок
+
+    println!("{}", map_option(Some("баба"), State { other }));
+    println!("{}", other);    // комп. грешка - use of moved value `other`
+
+= slide 'Move closure' do
+  p По подразбиране променливите се прихващат по референция
+
+  p Можем да променим това с ключовата дума <code>move</code>
+
+  div style="display: flex; flex-direction: row; justify-content: center"
+    div style="width: 100%; padding: 10px; border-right: 1px solid gray;"
+      example:
+        |s| s.len() + other.len();
+
+        // генерира
+
+        struct State<'a> {
+            other: &'a String
+        }
+
+    div style="width: 100%; padding: 10px 10px 10px 40px;"
+      example:
+        move |s| s.len() + other.len();
+
+        // генерира
+
+        struct State {
+            other: String
+        }
+
+= slide 'Closures' do
+  div style="display: flex; flex-direction: row; justify-content: center"
+    div style="width: 100%; padding: 10px; border-right: 1px solid gray;"
+      example:
+        let other = String::from("дядо");
+
+        let closure = |s| s.len() + other.len();
+
+        Some("баба").map(closure);
+
+    div style="width: 100%; padding: 10px 10px 10px 40px;"
+      example:
+        let other = String::from("дядо");
+
+        let closure = State { other: &other };
+
+        struct State<'a> {
+            other: &'a String,
+        }
+
+        impl<'a> ??? for State<'a> {
+            fn call(self: ???, s: &str) -> usize {
+                s.len() + self.other.len()
+            }
+        }
+
+        Some("баба").map(closure);
+
+= slide 'Fn traits' do
+  list:
+    `Fn`
+    `FnMut`
+    `FnOnce`
+
+  p.action Синтаксис
+  list:
+    `Fn()`
+    `FnMut(u32, u32) -> bool`
+    `FnOnce() -> String`
+
+= slide 'Fn traits', 'FnOnce' do
+  example:
+    // опростено
+    trait FnOnce<Args> {
+        type Output;
+        fn call_once(self, args: Args) -> Self::Output;
+    }
+
+  list:
+    `self`
+    може да се извика само веднъж
+    в комбинация с move closure може да се използва за прехвърляне на собственост
+
+= slide 'Fn traits', 'FnMut' do
+  example:
+    // опростено
+    trait FnMut<Args>: FnOnce<Args> {
+        fn call_mut(&mut self, args: Args) -> Self::Output;
+    }
+
+  list:
+    `&mut self`
+
+= slide 'Fn traits', 'Fn' do
+  example:
+    // опростено
+    trait Fn<Args>: FnMut<Args> {
+        fn call(&self, args: Args) -> Self::Output;
+    }
+
+  list:
+    `&self`
+
+= slide 'Fn traits' do
+  p.action Когато създадем closure, компилатора имплементира всички trait-ове, който може
+  list:
+    `FnOnce` + `FnMut` + `Fn`
+    `FnOnce` + `FnMut`
+    `FnOnce`
+
+  p
+  list:
+    Не можем да имаме само `Fn` или `FnMut` заради ограниченията на трейтовете
+    Ако това ви се струва странно, помислете как бихте имплементирали `FnMut` и `FnOnce` ако вече имате `Fn`
+
+= slide 'Fn traits' do
+  p Да имплементираме Fn trait-овете за нашия тип <code>State</code>
+
+  pre.action
+    ' error: the precise format of `Fn`-family traits' type parameters is subject to change.
+             Use parenthetical notation (Fn(Foo, Bar) -> Baz) instead
+
+  pre.action
+    ' error: rust-call ABI is subject to change
+      ...
+      = help: add #![feature(unboxed_closures)] to the crate attributes to enable
+
+  pre.action
+    ' error: use of unstable library feature 'fn_traits'
+      ...
+      = help: add #![feature(fn_traits)] to the crate attributes to enable
+
+  p.action ... или пък не
+
+= slide 'Taking closures' do
+  p По-популярния начин за взимане на closure е чрез static dispatch
+
+  example:
+    fn eval_and_increment<F>(f: F) -> usize where F: Fn_???() -> usize {
+        f() + 1
+    }
+
+    assert_eq!(eval_and_increment(|| 1), 2);
+
+= slide 'Taking closures' do
+  p Кой Fn trait да сложим за ограничение?
+
+  list:
+    добре е да налагаме възможно най-малко ограничения
+    `FnOnce` - най-добре
+    `FnMut` - ок
+    `Fn` - в последен случай
+    пробваме в този ред - което компилаторът ни разреши
+
+= slide 'Taking closures' do
+  example:
+    fn eval_and_increment<F>(f: F) -> usize where F: FnOnce() -> usize {
+        f() + 1
+    }
+
+    assert_eq!(eval_and_increment(|| 1), 2);
+
+= slide 'Saving closures' do
+  p
+    ' Да си направим адаптор за итератор, който работи подобно на
+      адаптора връщан от `Iterator::map()`
+
+  example:
+    struct Map<I, F, B> where
+        I: Iterator,
+        F: FnMut(I::Item) -> B
+    {
+        iter: I,
+        f: F,
+    }
+
+= slide 'Saving closures' do
+  example:
+    impl<I, F, B> Iterator for Map<I, F, B> where
+        I: Iterator,
+        F: FnMut(I::Item) -> B
+    {
+        type Item = B;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            match self.iter.next() {
+                Some(item) => Some((self.f)(item)),
+                None => None,
+            }
+        }
+    }
+
+= slide 'Saving closures' do
+  example:
+    // vec![1, 2, 3].into_iter().map(|x| x * 3)
+    let map = Map {
+        iter: vec![1, 2, 3].into_iter(),
+        f: |x| x * 3,
+    };
+
+    let v = map.collect::<Vec<_>>();
+    println!("{:?}", v);
+
+  pre
+    ' [3, 6, 9]
+
+= slide 'Returning closures' do
+  example:
+    fn get_incrementer() -> ??? {
+        |x| x + 1
+    }
+
+= slide 'Returning closures' do
+  p Да проверим какъв е типът на closure-а
+
+  example:
+    let _: () = |x| x + 1;
+
+  pre.action
+    ' = note: expected type `()`
+                 found type `[closure@src/main.rs:2:17: 2:26]`
+
+  p.action Тип генериран от компилатора, това не ни е полезно
+
+= slide 'Returning closures', 'Вариант 1' do
+  p Ако closure не прихваща променливи, той може автоматично да се сведе до указател към функция
+
+  example:
+    fn get_incrementer() -> fn(i32) -> i32 {
+        |x| x + 1
+    }
+
+= slide 'Returning closures', 'Вариант 2' do
+  p Често се налага да прихванем променливи
+
+  example:
+    fn curry(a: u32) -> ??? {
+        |b| a + b
+    }
+
+= slide 'Returning closures', 'Вариант 2' do
+  p Можем да използваме Trait objects
+
+  div style="display: flex; flex-direction: row; justify-content: center"
+    div style="width: 100%; padding: 10px; border-right: 1px solid gray;"
+      example:
+        struct F<'a> {
+            closure: &'a Fn()
+        }
+
+    div style="width: 100%; padding: 10px 10px 10px 40px;"
+      example:
+        struct F {
+            closure: Box<Fn()>
+        }
+
+= slide 'Returning closures', 'Вариант 2' do
+  p Така дали ще е добре?
+
+  example:
+    fn curry(a: u32) -> Box<Fn(u32) -> u32> {
+        Box::new(|b| a + b)
+    }
+
+= slide 'Returning closures', 'Вариант 2' do
+  p <code>move</code>
+
+  example:
+    fn curry(a: u32) -> Box<Fn(u32) -> u32> {
+        Box::new(move |b| a + b)
+    }
+
+    assert_eq!(curry(1)(2), 3);
+
+= slide 'Closures & lifetimes' do
+  example:
+    fn curry<'a>(a: &'a u32) -> Box<Fn(&u32) -> u32> {
+        Box::new(move |b| a + b)
+    }
+
+  pre.action
+    ' error[E0495]: cannot infer an appropriate lifetime due to conflicting requirements
+      ...
+
+= slide 'Closures & lifetimes' do
+  example:
+    fn curry<'a>(a: &'a u32) -> Box<Fn(&u32) -> u32> {
+        struct State<'b> {
+            a: &'b u32
+        }
+
+        // impl Fn, FnMut, FnOnce for State
+
+        let state = State { a };    // State<'a>
+        Box::new(state)             // очаква 'static
+    }
+
+= slide 'Closures & lifetimes', 'Lifetime на структура' do
+  p Какво означава обект (който не е референция) да има <code>'static</code> lifetime
+  p Lifetime-а показва максимално ограничение до което може да живее обект
+
+  example:
+    struct Foo<'a> { a: &'a i32 }
+
+    {
+        let a = 10;                     // ---+- 'a
+                                        //    |
+        let foo = Foo { a: &a };        // ---+- foo: 'a
+                                        //    |
+    }                                   // <--+
+
+= slide 'Closures & lifetimes', 'Lifetime на структура' do
+  p Когато обект не държи референции няма такова ограничение
+  p Затова се приема че обекта има <code>'static</code> lifetime
+
+  example:
+    struct Foo { a: i32 }
+
+    {
+        let a = 10;
+
+        let foo = Foo { a: a };         // foo: 'static
+    }
+
+= slide 'Closures & lifetimes' do
+  p По подразбиране се очаква trait object-а да няма такова ограничение
+
+  p <code>Box&lt;Fn(&u32) -> u32&gt;</code> -> <code>Box&lt;Fn(&u32) -> u32 + 'static&gt;</code>
+
+  p Ако имаме ограничение трябва да го окажем изрично
+
+  example:
+    fn curry<'a>(a: &'a u32) -> Box<Fn(&u32) -> u32 + 'a> {
+        Box::new(move |b| a + b)
+    }
+
+    assert_eq!(curry(&1)(&2), 3);
+
+= slide 'EventEmitter', 'layout' do
+  p Нека опитаме да напишем прост event emitter със следните изисквания:
+
+  list:
+    Generic по типа на съобщенията и типа на данните които се излъчват
+    `on` - регистрира слушател
+    `off` - премахва слушател
+    `emit` - излъчва съобщение с данни
+
+= slide 'EventEmitter', 'usage' do
+  example:
+    let mut emitter = EventEmitter::new();
+
+    let _  = emitter.on("boot", |p: String| println!("{}", p));
+    let id = emitter.on("boot", |_| println!("hi"));
+
+    emitter.off(id);
+
+    emitter.emit("boot", "woot".to_string());
+
+= slide 'EventEmitter', 'structures' do
+  p Ето как би изглеждала структурата
+
+  example:
+    struct EventEmitter<E, P> {
+        map: HashMap<E, Vec<Box<Fn(P)>>>
+    }
+
+= slide 'EventEmitter', 'structures' do
+  p Изглежда лесно...
+
+= slide 'EventEmitter', 'structures' do
+  p Но нещата не са толкова прости
+
+  example:
+    type Id = u64;
+
+    struct Listener<P> {
+        id: Id,
+        closure: Box<Fn(P) + 'static>
+    }
+
+    struct EventEmitter<E, P> where E: Eq + Hash, P: Clone {
+        next_id: Id,
+        map: HashMap<E, Vec<Listener<P>>>
+    }
+
+= slide 'EventEmitter', 'constructors' do
+  example:
+    impl<P> Listener<P> {
+        fn new<F>(id: Id, f: F) -> Self where F: Fn(P) + 'static {
+            Self {
+              id,
+              closure: Box::new(f)
+            }
+        }
+    }
+
+    impl<E, P> EventEmitter<E, P> where E: Eq + Hash, P: Clone {
+        fn new() -> Self {
+            Self {
+                next_id: Id::default(),
+                map: HashMap::new()
+            }
+        }
+    }
+
+= slide 'EventEmitter', 'on' do
+  p Място, където <code>map::Entry</code> ще ни улесни
+
+  example:
+    impl<E, P> EventEmitter<E, P> where E: Eq + Hash, P: Clone {
+        fn on<F>(&mut self, event: E, listener: F) -> Id where F: Fn(P) + 'static {
+            let id = self.next_id;
+            let listeners = self.map.entry(event).or_insert(Vec::new());
+
+            listeners.push(Listener::new(self.next_id, listener));
+
+            self.next_id += 1;
+            id
+        }
+    }
+
+= slide 'EventEmitter', 'off' do
+  example:
+    fn off(&mut self, id: Id) -> bool {
+        for (_, listeners) in self.map.iter_mut() {
+            let position = listeners.iter().position(|x| x.id == id);
+
+            if let Some(idx) = position {
+                listeners.remove(idx);
+                return true;
+            }
+        }
+
+        false
+    }
+
+= slide 'EventEmitter', 'emit' do
+  p Ето една възможност да използваме <code>Borrow</code>
+
+  example:
+    impl<E, P> EventEmitter<E, P> where E: Eq + Hash, P: Clone {
+        fn emit<B>(&self, event: B, payload: P) -> bool where B: Borrow<E> {
+            let event = event.borrow();
+
+            match self.map.get(event) {
+                Some(listeners) => {
+                    // Клонираме данните, за да може да ги подадем на всички слушатели
+                    listeners.iter().for_each(|f| (f.closure)(payload.clone()));
+                    true
+                },
+                None => false
+            }
+        }
+    }
