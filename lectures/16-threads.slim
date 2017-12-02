@@ -1,0 +1,882 @@
+= slide 'Административни неща' do
+  list:
+    Трето домашно!
+
+= slide 'Преговор' do
+  list:
+    Преговор на второ домашно, с интересни итератори
+    Функции и техните типове
+    Closure-и
+
+= slide 'Преговор' do
+  p Миналият път малко ви излъгахме за closures
+
+  p Как се прихващат променливите зависи от това как се използват
+
+  example:
+    let nums = vec![0, 1, 2, 3];
+
+    // прихваща `nums` като `&Vec<i32>`
+    let f1 = || {
+        for n in &nums {
+            println!("{}", n);
+        }
+    };
+
+    // прихваща `nums` като `Vec<i32>`
+    let f2 = || {
+        for n in nums {
+            println!("{}", n);
+        }
+    };
+
+= slide 'Преговор' do
+  p <code>move</code> премества стойността, независимо как се използва
+
+  example:
+    let nums = vec![0, 1, 2, 3];
+
+    // прихваща `nums` като `Vec<i32>`
+    let f3 = move || {
+        for n in &nums {
+            println!("{}", n);
+        }
+    };
+
+= slide 'Преговор' do
+  p Няколко трика ако искаме да преместим някоя стойност, но да прихванем друга по референция
+
+  example:
+    let nums = vec![0, 1, 2, 3];
+    let s = String::from("баба");
+
+    let f = || {
+        let nums = nums;        // move `nums`
+
+        println!("{:?}", nums);
+        println!("{:?}", s);
+    };
+
+    // println!("{:?}", nums);   // комп. грешка
+    println!("{:?}", s);
+
+= slide 'Преговор' do
+  example:
+    let nums = vec![0, 1, 2, 3];
+    let s = String::from("баба");
+
+    {
+        let s = &s;             // move `s: &String`
+
+        let f = move || {
+            println!("{:?}", nums);
+            println!("{:?}", s);
+        };
+    }
+
+    // println!("{:?}", nums);   // комп. грешка
+    println!("{:?}", s);
+
+= slide 'Event emitter' do
+  p Миналият път написахме прост event emitter
+  p Да си припомним какъв интерфейс имаше
+
+= slide 'Event emitter' do
+  example:
+    struct EventEmitter<E, P> where E: Eq + Hash, P: Clone {
+        next_id: Id,
+        map: HashMap<E, Vec<Listener<P>>>
+    }
+
+    impl<E, P> EventEmitter<E, P> where E: Eq + Hash, P: Clone {
+        fn new() -> Self { ... }
+
+        /// Регистрира слушател
+        fn on<F>(&mut self, event: E, listener: F) -> Id where F: Fn(P) + 'static { ... }
+
+        /// Премахва слушател
+        fn off(&mut self, id: Id) -> bool { ... }
+
+        /// Излъчва съобщение с данни
+        fn emit<B>(&self, event: B, payload: P) -> bool where B: Borrow<E> { ... }
+    }
+
+= slide 'Event emitter' do
+  example:
+    type Id = u64;
+
+    struct Listener<P> {
+        id: Id,
+        closure: Box<Fn(P) + 'static>
+    }
+
+    impl<P> Listener<P> {
+        fn new<F>(id: Id, f: F) -> Self where F: Fn(P) + 'static { ... }
+    }
+
+= slide 'Event emitter' do
+  p
+    ' Тази имплементация имаше проблем - какво става ако искаме да подадем
+      данните за съобщението през референция
+
+  example:
+    fn main() {
+        let mut emitter = EventEmitter::new();
+        emitter.on("boot", |p: &str| println!("{}", p));
+
+        let data = "woot".to_string();
+        emitter.emit("boot", &data);
+    }
+
+= slide 'Event emitter' do
+  pre
+    ' error[E0597]: `data` does not live long enough
+        --> src/main.rs:177:1
+          |
+      176 |     emitter.emit("boot", &data);
+          |                           ---- borrow occurs here
+      177 | }
+          | ^ `data` dropped here while still borrowed
+          |
+          = note: values in a scope are dropped in the opposite order they are created
+
+  p.action Защо?
+
+= slide 'Event emitter' do
+  p Още по-странно, ако преместим <code>data</code> над <code>emitter</code>, всичко работи
+
+  example:
+    fn main() {
+        let data = "woot".to_string();
+
+        let mut emitter = EventEmitter::new();
+        emitter.on("boot", |p: &str| println!("{}", p));
+
+        emitter.emit("boot", &data);
+    }
+
+= slide 'Event emitter' do
+  p <code>emitter</code> няма lifetime, но иска да живее повече от <code>data</code>...
+  p.action ... а дали е така?
+
+= slide 'Event emitter' do
+  example:
+    emitter.emit("boot", &data);
+
+    fn emit<B>(&self, event: B, payload: P) -> bool where B: Borrow<E> { ... }
+
+    // => P = &'a str
+
+= slide 'Event emitter' do
+  example:
+    fn main() {
+        let mut emitter = EventEmitter::new();            // EventEmitter<E = ?, P = ?>
+        emitter.on("boot", |p: &str| println!("{}", p));  // EventEmitter<&'static str, &'? str>
+
+        let data = "woot".to_string();
+        emitter.emit("boot", &data);                      // EventEmitter<&'static str, &'a str>
+    }
+
+  p <code>P</code> ограничава колко може да живее <code>emitter</code>
+
+= slide 'Event emitter' do
+  p Решението: <code>P</code> -> <code>&P</code>
+
+  example:
+      fn emit<B>(&self, event: B, payload: &P) -> bool where B: Borrow<E> { ... }
+
+      struct Listener<P> {
+          id: Id,
+          closure: Box<Fn(&P) + 'static>
+      }
+
+= slide 'Event emitter' do
+  pre
+    ' error[E0277]: the trait bound `str: std::marker::Sized` is not satisfied
+        --> src/main.rs:175:13
+          |
+      175 |     emitter.on("boot", |p: &str| println!("{}", p));
+          |             ^^ `str` does not have a constant size known at compile-time
+          |
+          = help: the trait `std::marker::Sized` is not implemented for `str`
+
+= slide 'Event emitter' do
+  p
+    ' Използваме <code>P</code> само зад референция (<code>&P</code>) затова можем да
+      добавим "ограничение" <code>?Sized</code>
+
+  example:
+    struct Listener<P> where P: ?Sized {
+        id: Id,
+        closure: Box<Fn(&P) + 'static>
+    }
+
+    struct EventEmitter<E, P> where E: Eq + Hash, P: ?Sized {
+        next_id: Id,
+        map: HashMap<E, Vec<Listener<P>>>
+    }
+
+= slide 'Event emitter' do
+  pre
+    ' woot
+
+  p Работи!
+
+= slide 'Closures', 'Аргументи с lifetime' do
+  list:
+    `Box<Fn(&P) + 'static>`
+    какво е `Fn(&P)`?
+    явно е lifetime elision, но каква е пълната версия?
+
+= slide 'Closures', 'Аргументи с lifetime' do
+  list:
+    `for<'a> Fn(&'a P)`
+
+= slide 'Fearless concurrency' do
+  img src="images/time_travel.jpg"
+
+= slide 'Нишки' do
+  example:
+    use std::thread;
+
+    fn main() {
+        thread::spawn(|| println!("hi from the spawned thread"));
+
+        println!("hi from the main thread");
+    }
+
+  p.action
+    ' Примерен изход
+
+  pre.action
+    ' hi from the main thread
+
+= slide 'Нишки' do
+  p Програмата приключва когато главната нишка завърши
+
+  example:
+    use std::thread;
+
+    fn main() {
+        let handle = thread::spawn(|| println!("hi from the spawned thread"));
+
+        println!("hi from the main thread");
+        handle.join();
+    }
+
+  pre
+    ' hi from the main thread
+      hi from the spawned thread
+
+= slide 'Нишки' do
+  example:
+    use std::thread;
+
+    fn main() {
+        let nums = (0..100).collect::<Vec<_>>();
+
+        let handle = thread::spawn(|| {
+            for i in &nums {
+                println!("number {} from the spawned thread", i);
+            }
+        });
+
+        handle.join();
+    }
+
+= slide 'Нишки' do
+  pre
+    ' error[E0373]: closure may outlive the current function, but it borrows `nums`, which is owned
+                    by the current function
+      --> src/main.rs:6:36
+        |
+      6 |         let handle = thread::spawn(|| {
+        |                                    ^^ may outlive borrowed value `nums`
+      7 |             for i in &nums {
+        |                       ---- `nums` is borrowed here
+        |
+      help: to force the closure to take ownership of `nums` (and any other referenced variables),
+            use the `move` keyword
+        |
+      6 |         let handle = thread::spawn(move || {
+        |                                    ^^^^^^^
+
+= slide 'Нишки' do
+  example:
+    pub fn spawn<F, T>(f: F) -> JoinHandle<T> where
+        F: FnOnce() -> T + Send + 'static,
+        T: Send + 'static,
+
+  list:
+    Нямаме гаранции колко време ще живее нишката, затова не можем да изпращаме референции
+    Ще видим какво е `Send` след малко
+
+= slide 'Нишки' do
+  example:
+    use std::thread::Builder;
+
+    let nums = (0..100).collect::<Vec<_>>();
+
+    let handle = Builder::new()
+        .name("sirespawn".to_string())
+        .spawn(move || {
+            for i in &nums {
+                println!("number {} from the spawned thread", i);
+            }
+            nums
+        })
+        .expect("could not create thread");
+
+    let nums = handle.join().expect("sirespawn panicked!");
+    println!("{:?}", nums);
+
+= slide 'Нишки' do
+  example:
+    use std::thread;
+    use std::time::Duration;
+
+    let handle = thread::spawn(|| {
+        println!("before park");
+        thread::park();
+        println!("after park");
+    });
+
+    thread::sleep(Duration::from_secs(1));
+    handle.thread().unpark();
+    let _ = handle.join();
+
+= slide 'Send + Sync' do
+  p Send - позволява прехвърляне на собственост между нишки
+  p Sync - позволява споделяне между няколко нишки през референция <code>&T</code>
+
+  list:
+    marker traits
+    имплементирани са за повечето типове
+    имплементират се автоматично ако всичките ни полета са съответно `Send` и `Sync`
+    unsafe traits - `unsafe` са за ръчна имплементация
+
+= slide 'Send + Sync', 'Send' do
+  list:
+    пример за типове, които не могат да се прехвърлят между нишки
+    `Rc`
+    `Weak`
+    `*const T`
+    `*mut T`
+    и други
+
+= slide 'Send + Sync', 'Sync' do
+  list:
+    типове които не са `Sync` обикновено имат internal mutability без синхронизация, например
+    `Cell`
+    `RefCell`
+    `Rc`
+    `Weak`
+    `*const T`
+    `*mut T`
+
+= slide 'Send + Sync', 'имплементация' do
+  example:
+    struct MyBox(*mut u8);
+
+    unsafe impl Send for MyBox {}
+    unsafe impl Sync for MyBox {}
+
+= slide 'Send + Sync', 'деимплементация' do
+  example:
+    // Само на nightly
+    #![feature(optin_builtin_traits)]
+
+    struct SpecialToken(u8);
+
+    impl !Send for SpecialToken {}
+    impl !Sync for SpecialToken {}
+
+  list:
+    забраняваме автоматичната имплементация на `Send` и `Sync`
+    автоматичната имплементация никога няма да е грешна от само себе си
+    но може да пишем код, който разчита, че определен тип не може да се прехвърля / споделя
+
+= slide 'Send + Sync', 'деимплементация' do
+  p Хак ако не използваме nightly rust
+
+  example:
+    use std::marker::PhantomData;
+
+    struct SpecialToken(u8, PhantomData<*const ()>);
+
+  list:
+    `PhantomData<T>` е специален тип за компилатора
+    няма размер (zero sized type)
+    кара структурата да се държи все едно съдържа `T`
+
+= slide 'Arc' do
+  list:
+    Atomic Reference Counter
+    подобно на `Rc`, но използва атомарни операции за броене на референции
+    позволява споделяне между нишки на стойностти, които имплементират `Send` и `Sync`
+    позволява ни да вземем референция (`&T`) към съдържанието
+    има и слаба версия - `std::sync::Weak`
+
+= slide 'Arc' do
+  example:
+    use std::sync::Arc;
+    use std::thread;
+
+    fn main() {
+        let shared = Arc::new(123);
+
+        for _ in 0..3 {
+            let shared = Arc::clone(&shared);
+
+            thread::spawn(move || {
+                let data = *shared;
+                println!("{}", data)
+            });
+        }
+    }
+
+= slide 'Mutex' do
+  example:
+    use std::sync::Mutex;
+
+    fn main() {
+        let mutex = Mutex::new(10);
+
+        {
+            // lock the mutex
+            // `lock` is a smart pointer which derefs to `&T` and `&mut T`
+            let mut lock = mutex.lock().unwrap();
+
+            *lock += 32;
+
+            // mutex is unlocked when `lock` is dropped (`lock` is a RAII guard)
+        }
+    }
+
+= slide 'Други' do
+  list:
+    други типове за синхронизация включват
+    `RwLock`
+    `Condvar`
+    `Barrier`
+    вижте `std::sync`
+
+= slide 'Event emitter' do
+  p
+    ' За упражнение ще разширим event emitter-а от миналата лекция така, че да може да се използва
+      от много нишки
+
+  example:
+    impl<E, P> EventEmitter<E, P> where E: Eq + Hash {
+        fn new() -> Arc<Mutex<Self>> {
+            Arc::new(Mutex::new(Self {
+                next_id: Id::default(),
+                map: HashMap::new()
+            }))
+        }
+    }
+
+= slide 'panic' do
+  list:
+    `panic!` в главната нишка спира програмата
+    `panic!` в друга нишка спира нишката
+    `JoinHandle::join` ще ни върне дали нишката се е панирала
+    ако е така резултата ще е `Err(Box<Any + Send + 'static>)`
+
+= slide 'panic' do
+  list:
+    ако нишка е заключила mutex и се панира по това време, може данните пазени от mutex-а да са невалидни
+    в такъв случай mutex-а се зачита за отровен (mutex poisoning)
+    `Mutex::lock()` и `Mutex::try_lock()` връщат резултат
+    или `Ok(MutexGuard)` през който можем да достъпваме вътрешната стойност
+    или `Err(PoisonError)` ако mutex-а е отровен
+
+= slide 'Atomics' do
+  p Съществуват и атомарни стандартни типове
+
+  list:
+    ползват се от `Arc` например
+    AtomicBool
+    AtomicUsize
+    ...
+
+= slide 'Atomics' do
+  example:
+    use std::sync::atomic::{AtomicIsize, Ordering};
+
+    let some_isize = AtomicIsize::new(5);
+
+    some_isize.store(10, Ordering::Relaxed);
+    assert_eq!(some_isize.load(Ordering::Relaxed), 10);
+
+= slide 'Atomics' do
+  p Какво прави <code>Ordering</code>?
+
+  example:
+    pub enum Ordering {
+      Relaxed,
+      SeqCst,
+      // some variants omitted
+    }
+
+  list:
+    казва на компилатора какво може да прави с инструкциите около операцията
+    вариантите са същите като на LLVM
+    `Relaxed` е в случай когато няма ограничения и компилатора може да размества инструкциите
+
+  p.action
+    ' `SeqCst` (sequentially consistent) не позволява нито инструкции за четене нито за писане
+      да бъдат размествани нито преди, нито след реда с нашата инструкция.
+
+= slide 'Atomics' do
+  p
+    ' Има и разни полезни методи като <code>compare_and_swap</code>, но оставяме на вас
+      да си четете документацията, ако ще ги ползвате.
+
+
+= slide 'Еvent emitter' do
+  p От миналата лекция видяхме как може да си направим прост EventEmitter
+
+= slide 'Async event emitter' do
+  p В същия дух ще направим един който да вика слушателите асинхронно
+
+  example:
+    let mut emitter = AsyncEventEmitter::<&str, u32>::new();
+
+    emitter.on("boot", |p| println!("{}", p));
+    emitter.on("woot", |p| println!("{}", p));
+
+    emitter.emit("boot", 1).unwrap();
+    emitter.emit("woot", 2).unwrap();
+    emitter.emit("boot", 3).unwrap();
+
+= slide 'Async event emitter' do
+  p Нека да пробваме най-базовото нещо:
+
+  example:
+    use std::thread;
+
+    fn emit<B>(&self, event: B, payload: P) -> bool where B: Borrow<E> {
+        let event = event.borrow();
+
+        match self.map.get(event) {
+            Some(listeners) => {
+                thread::spawn(|| {
+                    listeners.iter().for_each(|f| (f.closure)(payload.clone()));
+                });
+                true
+            },
+            None => false
+        }
+    }
+
+= slide 'Async event emitter' do
+  pre
+    ' error[E0277]: the trait bound `P: std::marker::Sync` is not satisfied
+        --> src\main.rs:166:17
+          |
+      166 |     thread::spawn(|| {
+          |     ^^^^^^^^^^^^^ `P` cannot be shared between threads safely
+          |
+
+      error[E0277]: the trait bound `std::ops::Fn(P) + 'static: std::marker::Sync` is not satisfied
+        --> src\main.rs:166:17
+          |
+      166 |     thread::spawn(|| {
+          |     ^^^^^^^^^^^^^ `std::ops::Fn(P) + 'static` cannot be shared between threads safely
+          |
+
+= slide 'Async event emitter' do
+  p А какво, ако послушаме компилатора?
+
+  list:
+    `Fn(P) + 'static` -> `Fn(P) + Sync + 'static`
+    `P: Clone` -> `P: Clone + Sync`
+
+= slide 'Async event emitter' do
+  pre
+    ' error[E0495]: cannot infer an appropriate lifetime for autoref due to conflicting requirements
+        --> src\main.rs:164:24
+          |
+      164 |         match self.map.get(event) {
+          |                        ^^^
+          |
+      note: first, the lifetime cannot outlive the anonymous lifetime #1 defined on the method body at 159:5...
+        --> src\main.rs:159:5
+          |
+      159 | /     fn emit&lt;B&gt;(&self, event: B, payload: P) -> bool where B: Borrow<E> {
+      160 | |         use std::thread;
+      161 | |
+      162 | |         let event = event.borrow();
+      ...   |
+      172 | |         }
+      173 | |     }
+          | |_____^
+      note: ...so that reference does not outlive borrowed content
+        --> src\main.rs:164:15
+          |
+      164 |         match self.map.get(event) {
+          |               ^^^^^^^^
+          = note: but, the lifetime must be valid for the static lifetime...
+      note: ...so that the type `[closure@src\main.rs:166:31: 168:18 listeners:&&std::vec::Vec<Listener<P>>, payload:&P]` will meet its required lifetime bounds
+        --> src\main.rs:166:17
+          |
+      166 |                 thread::spawn(|| {
+          |                 ^^^^^^^^^^^^^
+= slide 'Async event emitter' do
+  p Май ще си покопаме..
+
+= slide 'Async event emitter' do
+  p Може би да пробваме с <code>Arc</code> и <code>Mutex</code>
+
+  example:
+    use std::sync::{Arc, Mutex};
+
+    struct EventEmitter<E, P> where E: Eq + Hash, P: Clone {
+        next_id: Id,
+        map: HashMap<E, Arc<Mutex<Vec<Listener<P>>>>>
+    }
+
+= slide 'Async event emitter' do
+  p Тогава трябва да минем и заместим listeners променливите с това
+
+  example:
+    let listeners = arc.lock().expect("Something went wrong")
+
+= slide 'Async event emitter' do
+  p За <code>on</code> и </code>off</code> е тривиално, ами <code>emit</code>?
+
+  example:
+    fn emit<B>(&self, event: B, payload: P) -> bool where B: Borrow<E> {
+        let event = event.borrow();
+
+        match self.map.get(event) {
+            Some(arc) => {
+                thread::spawn(|| {
+                    let listeners = arc.lock().expect("Something went wrong");
+                    listeners.iter().for_each(|f| (f.closure)(payload.clone()));
+                });
+                true
+            },
+            None => false
+        }
+    }
+
+= slide 'Async event emitter' do
+  p Май имаме напредък?
+
+  pre
+    ' error[E0277]: the trait bound `P: std::marker::Send` is not satisfied in
+      `[closure@src\main.rs:178:31: 181:18 arc:&std::sync::Arc<std::sync::Mutex<std::vec::Vec<Listener<P>>>>, payload:P]`
+        --> src\main.rs:178:17
+          |
+      178 |     thread::spawn(|| {
+          |     ^^^^^^^^^^^^^ `P` cannot be sent between threads safely
+          |
+          required by `std::thread::spawn`
+
+      error[E0277]: the trait bound `std::ops::Fn(P) + 'static: std::marker::Send` is not satisfied
+        --> src\main.rs:178:17
+          |
+      178 |     thread::spawn(|| {
+          |     ^^^^^^^^^^^^^ `std::ops::Fn(P) + 'static` cannot be sent between threads safely
+          |
+          required by `Arc`
+
+= slide 'Async event emitter' do
+  p Нека пробваме пак, но този път компилатора иска <code>Send</code>
+
+  list:
+    `Fn(P) + 'static` -> `Fn(P) + Send + 'static`
+    `P: Clone` -> `P: Clone + Send`
+
+= slide 'Async event emitter' do
+  p Офф пак това..
+
+  pre
+    ' error[E0277]: the trait bound `P: std::marker::Sync` is not satisfied
+        --> src\main.rs:178:17
+          |
+      178 |     thread::spawn(|| {
+          |     ^^^^^^^^^^^^^ `P` cannot be shared between threads safely
+          |
+
+= slide 'Async event emitter' do
+  p closure-а се опитва да прихване променливите по референция
+
+  example:
+    thread::spawn(|| {
+        /* ... */
+    });
+
+= slide 'Async event emitter' do
+  p На нас не ни трябва това, <code>move</code> е достатъчно добре
+
+  example:
+    fn emit<B>(&self, event: B, payload: P) -> bool where B: Borrow<E> {
+        let event = event.borrow();
+
+        match self.map.get(event) {
+            Some(arc) => {
+                thread::spawn(move || {
+                    let listeners = arc.lock().expect("Something went wrong");
+                    listeners.iter().for_each(|f| (f.closure)(payload.clone()));
+                });
+                true
+            },
+            None => false
+        }
+    }
+
+= slide 'Async event emitter' do
+  pre
+    ' error[E0495]: cannot infer an appropriate lifetime for autoref due to conflicting requirements
+        --> src\main.rs:176:24
+          |
+      176 |         match self.map.get(event) {
+          |                        ^^^
+          |
+      note: first, the lifetime cannot outlive the anonymous lifetime #1 defined on the method body at 165:5...
+        --> src\main.rs:165:5
+          |
+      165 | /     fn emit&lt;B&gt;(&self, event: B, payload: P) -> bool where B: Borrow<E> {
+      166 | |         let event = event.borrow();
+      ...   |
+      185 | |         }
+      186 | |     }
+          | |_____^
+      note: ...so that reference does not outlive borrowed content
+        --> src\main.rs:176:15
+          |
+      176 |         match self.map.get(event) {
+          |               ^^^^^^^^
+          = note: but, the lifetime must be valid for the static lifetime...
+      note: ...so that the type `[closure@src\main.rs:178:31: 181:18 arc:&std::sync::Arc<std::sync::Mutex<std::vec::Vec<Listener<P>>>>, payload:P]` will meet its required lifetime bounds
+        --> src\main.rs:178:17
+          |
+      178 |                 thread::spawn(move || {
+          |
+
+= slide 'Async event emitter' do
+  p
+    ' Изглежда изродско, но просто иска да ни каже, че референцията дето ни дава
+      <code>map.get</code> не може да я премести тъй като вероятно ще надживее main нишката.
+
+= slide 'Async event emitter' do
+  p Решението е просто да клонираме <code>Arc</code>
+
+  example:
+    match self.map.get(event) {
+        Some(arc) => {
+            let arc = arc.clone();
+            thread::spawn(move || {
+                let listeners = arc.lock().expect("Something went wrong");
+                listeners.iter().for_each(|f| (f.closure)(payload.clone()));
+            });
+            true
+        },
+        None => false
+    }
+
+= slide 'Async event emitter' do
+  p 👏
+
+  pre
+    ' Finished dev [unoptimized + debuginfo] target(s) in 0.0 secs
+      Running `target\debug\async_event_emitter.exe`
+
+= slide 'Async event emitter' do
+  p Супер, нека видим как ще го ползваме това
+
+  example:
+    fn main() {
+        let mut emitter = AsyncEventEmitter::new();
+
+        emitter.on("boot", |p: String| println!("{}", p));
+        let id = emitter.on("boot", |_| println!("hi"));
+
+        emitter.off(id);
+
+        emitter.emit("boot", "woot".to_string());
+    }
+
+  pre
+    ' woot
+
+= slide 'Async event emitter' do
+  p Изглежда добре :)
+
+= slide 'Async event emitter' do
+  p Или пък не..
+
+  example:
+    fn main() {
+        let mut emitter = AsyncEventEmitter::<&str, u32>::new();
+
+        emitter.on("boot", |p| println!("{}", p));
+        emitter.on("woot", |p| println!("{}", p));
+
+        emitter.emit("boot", 1).unwrap();
+        emitter.emit("woot", 2).unwrap();
+        emitter.emit("boot", 3).unwrap();
+    }
+
+  pre
+    ' 1
+
+= slide 'Async event emitter' do
+  p Пак?
+
+  pre
+    ' 1
+      2
+
+= slide 'Async event emitter' do
+  p Изглежда главната ни нишка приключва рано
+
+= slide 'Async event emitter' do
+  p Може да преправим <code>emit</code> метода да ни връща <code>JoinHandle</code>
+
+  example:
+    fn emit<B>(&self, event: B, payload: P) -> Option<JoinHandle<()>> where B: Borrow<E> {
+        let event = event.borrow();
+
+        self.map.get(event).map(|arc| {
+            let arc = arc.clone();
+            thread::spawn(move || {
+                let listeners = arc.lock().expect("Something went wrong");
+                listeners.iter().for_each(|f| (f.closure)(payload.clone()));
+            })
+        })
+    }
+
+= slide 'Async event emitter' do
+  p Така може да постигнем нещо подобно на
+
+  example:
+    fn main() {
+        let mut emitter = AsyncEventEmitter::<&str, u32>::new();
+        emitter.on("boot", |p| println!("{}", p));
+        emitter.on("woot", |p| println!("{}", p));
+
+        let mut handles = Vec::new();
+
+        for _ in 0..2 {
+            handles.push(emitter.emit("boot", 1).unwrap());
+            handles.push(emitter.emit("woot", 2).unwrap());
+            handles.push(emitter.emit("boot", 3).unwrap());
+        }
+
+        for handle in handles {
+            handle.join().unwrap();
+        }
+    }
+
+= slide 'Async event emitter' do
+  pre
+    ' 1
+      3
+      2
+      1
+      3
+      2
