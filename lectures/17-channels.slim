@@ -1,0 +1,614 @@
+= slide 'Административни неща' do
+  list:
+    Трето домашно!
+    Идеи за проекти
+    Петък няма лекция
+    Следващия петък (15.12) в зала 200
+
+= slide 'Преговор', 'Нишки' do
+  p Разлика между <code>thread::spawn</code> и <code>thread::Builder::new().spawn()</code>
+
+  example:
+    use std::thread;
+
+    let handle = thread::spawn(|| println!("изненада!")); // JoinHandle<()>
+
+    let probably_handle = thread::Builder::new()
+        .name(String::from("safe"))
+        .spawn(|| println!("сюрприз!")); // Result<JoinHandle<()>>
+
+    handle.join();
+
+    probably_handle.unwrap().join();
+    // match probably_handle { ... }
+
+= slide 'Преговор', 'Нишки' do
+  p Какво може да правим с <code>JoinHandle</code>?
+
+  example:
+    let handle = thread::spawn(|| 2_i32 + 2); // JoinHandle<i32>
+
+    match handle.join() {
+        Ok(value) => println!("{}", value),
+        Err(e) => panic!("Изчислението беше ТВЪРДЕ СЛОЖНО! {:?}", e)
+    }
+
+= slide 'Преговор', 'Споделена памет със Arc, Mutex, move closures' do
+  example:
+    let counter = Arc::new(Mutex::new(0_u32)); // Arc<Mutex<u32>>
+    let mut handles = Vec::new();
+
+    for _ in 0..10 {
+        let counter = Arc::clone(&counter); // Arc<Mutex<u32>>
+        let handle = thread::spawn(move || {
+          let mut num = counter.
+              lock().     // LockResult<MutexGuard<T>>
+              unwrap();   // MutexGuard<T>
+
+            // *MutexGuard<T> -> *&T
+            *num += 1;
+        });
+        handles.push(handle);
+    }
+
+= slide 'Преговор', 'Send и Sync' do
+  list:
+    `Send`-типове могат да се move-ват между нишки. `Arc` е `Send`, `Rc` не е `Send`.
+    `Sync`-типове могат да се reference-ват между нишки. Reference към споделен тип може да се вземе от няколко нишки (спазвайки обичайните правила). `RefCell` не е `Sync`. `Mutex` е `Sync`.
+    Иначе казано, един тип `T` е `Sync`, ако `&T` е `Send`.
+
+= slide 'Atomics' do
+  list:
+    Служат за нещо като мутекси, обвиващи базови типове
+    `AtomicU32 ~~ Mutex<u32>`
+    Nightly
+
+= slide 'Barrier' do
+  example:
+    use std::sync::{Arc, Barrier};
+    use std::thread;
+
+    let mut handles = Vec::with_capacity(10);
+
+    // създаваме бариера, която ще блокира първите 9 нишки, които извикат .wait()
+    // и ще събуди всички когато 10-тата извика .wait()
+    let barrier = Arc::new(Barrier::new(10));
+
+= slide 'Barrier' do
+  example:
+    for _ in 0..10 {
+        let c = Arc::clone(&barrier);
+
+        // Еднаквите съобщения ще се принтират заедно
+        handles.push(thread::spawn(move|| {
+            println!("before wait");
+            c.wait();
+            println!("after wait");
+        }));
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+= slide 'Condvar' do
+  example:
+    fn main() {
+        let pair = Arc::new((Mutex::new(false), Condvar::new()));
+        let pair2 = Arc::clone(&pair);
+
+        thread::spawn(move || {
+            let &(ref mutex, ref cvar) = &*pair2;
+            let mut started = mutex.lock().unwrap();
+
+            *started = true;
+
+            // Казваме на `cvar` че сме променили стойността.
+            // Ако има чакаща нишка с `cvar.wait()` тя ще бъде събудена
+            // Ако няма нищо няма да се случи - извиквания на `notify_one` или `notify_all` не се бъферират
+            cvar.notify_one();
+        });
+
+        // ...
+
+= slide 'Condvar' do
+  example:
+    fn main() {
+        // ...
+
+        let &(ref mutex, ref cvar) = &*pair;
+        let mut started = mutex.lock().unwrap();
+
+        // Изчакваме новата нишка да започне
+        // Възможно е тази нишката да бъде събудена спонтанно, без да е извикано `cvar.notify_*()`,
+        // затова проверяваме дали е изпълнено условието в цикъл
+        while !*started {
+            // `cvar.wait()` прави следното
+            // - отключва мутекса `started`
+            // - слага нишката да спи
+            // - когато нишката се събуди, заключва мутекса и го връща
+            started = cvar.wait(started).unwrap();
+        }
+    }
+
+= slide 'RwLock' do
+  example:
+    let lock = RwLock::new(5);
+
+    // many reader locks can be held at once
+    {
+        let r1 = lock.read().unwrap();
+        let r2 = lock.read().unwrap();
+        assert_eq!(*r1, 5);
+        assert_eq!(*r2, 5);
+    } // read locks are dropped at this point
+
+    // only one write lock may be held, however
+    {
+        let mut w = lock.write().unwrap();
+        *w += 1;
+        assert_eq!(*w, 6);
+    } // write lock is dropped here
+
+= slide 'RwLock' do
+  list:
+    работи като `Mutex`, но различава между заключване за писане и за четене
+    ако нишката се панира докато държи `RwLock`-а заключен за писане, `RwLock`-а ще бъде отровен
+    използва примитиви за синхронизация от операционната система
+
+= slide 'RwLock', 'приоритет' do
+  img src="images/rwlock_priority_0.png"
+
+= slide 'RwLock', 'приоритет' do
+  img src="images/rwlock_priority_1.png"
+  img src="images/rwlock_priority_2.png"
+
+= slide 'Channels', 'Multiple Producer, Single Consumer' do
+  img src="images/mpsc.png"
+
+= slide 'Channels' do
+  blockquote
+    h2 Don't communicate by sharing memory,
+    h2 share memory by communicating
+    h2 style="padding-left: 500px" -- go-lang
+
+= slide 'Канали' do
+  example:
+    use std::sync::mpsc;
+    use std::thread;
+
+    fn main() {
+        let (sender, receiver) = mpsc::channel();
+
+        thread::spawn(move || {
+            sender.send(10).unwrap();
+        });
+
+        println!("received {}", receiver.recv().unwrap());  // 10
+    }
+
+= slide 'Типове канали' do
+  list:
+    неограничен канал (unbounded / infinitely buffered / "asynchronous")
+    `std::sync::mpsc::channel()`
+    `(Sender, Receiver)`
+    изпращане на съобщение никога не блокира
+
+= slide 'Типове канали' do
+  example:
+    let (sender, receiver) = mpsc::channel();
+
+    thread::spawn(move || {
+        sender.send(1).unwrap();
+        sender.send(2).unwrap();
+        sender.send(3).unwrap();
+    });
+
+    assert_eq!(receiver.recv().unwrap(), 1);
+    assert_eq!(receiver.recv().unwrap(), 2);
+    assert_eq!(receiver.recv().unwrap(), 3);
+
+= slide 'Типове канали' do
+  list:
+    ограничен канал (bounded / "synchronous")
+    `std::sync::mpsc::sync_channel(k)`
+    `(SyncSender, Receiver)`
+    има буфер за `k` съобщения
+    изпращане на съобщения ще блокира ако буфера е пълен
+    при `k = 0` става "rendezvous" канал
+
+= slide 'Типове канали' do
+  example:
+    let (sender, receiver) = mpsc::sync_channel(1);
+
+    thread::spawn(move || {
+        // записва съобщението и връща веднага
+        sender.send(1).unwrap();
+
+        // ще блокира докато главната нишка не извика `receiver.recv()`
+        sender.send(2).unwrap();
+    });
+
+    assert_eq!(receiver.recv().unwrap(), 1);
+    assert_eq!(receiver.recv().unwrap(), 2);
+
+= slide 'Множество изпращачи' do
+  example:
+    let (sender, receiver) = mpsc::channel();
+    let shared_sender = Arc::new(sender);
+
+    thread::spawn(move || {
+        shared_sender.send(1).unwrap();
+        shared_sender.send(2).unwrap();
+    });
+
+    thread::spawn(move || {
+        shared_sender.send(3).unwrap();
+        shared_sender.send(4).unwrap();
+    });
+
+    println!("{} {} {} {}", receiver.recv().unwrap(), receiver.recv().unwrap(),
+        receiver.recv().unwrap(), receiver.recv().unwrap());
+
+= slide 'Множество изпращачи' do
+  pre
+    ' error[E0277]: the trait bound `std::sync::mpsc::Sender<i32>: std::marker::Sync` is not satisfied
+      --> src/main.rs:9:5
+        |
+      9 |     thread::spawn(move || {
+        |     ^^^^^^^^^^^^^ `std::sync::mpsc::Sender<i32>` cannot be shared between threads safely
+        |
+
+  list:
+    `Sender` е `Send`, но не е `Sync`
+    трябва да направим копие за всяка нишка с `clone()`
+
+= slide 'Множество изпращачи' do
+  example:
+    let (sender, receiver) = mpsc::channel();
+    let sender2 = sender.clone();
+
+    thread::spawn(move || {
+        sender.send(1).unwrap();
+        sender.send(2).unwrap();
+    });
+
+    thread::spawn(move || {
+        sender2.send(3).unwrap();
+        sender2.send(4).unwrap();
+    });
+
+    println!("{} {} {} {}", receiver.recv().unwrap(), receiver.recv().unwrap(),
+        receiver.recv().unwrap(), receiver.recv().unwrap());
+
+    // примерен изход: 3 4 1 2
+
+= slide 'Sender', 'методи' do
+  example:
+    fn send(&self, t: T) -> Result<(), SendError<T>>
+
+  list:
+    изпраща `t`
+    връща грешка ако получателят е бил унищожен
+
+= slide 'Sender', 'методи' do
+  example:
+    let (sender, receiver) = mpsc::channel();
+
+    assert_eq!(sender.send(12), Ok(()));
+
+    // унищожаваме получателя
+    // съобщението `12` никога няма да бъде получено
+    mem::drop(receiver);
+
+    // грешка - получателя е унищожен
+    // можем да си върнем съобщението `23` от грешката
+    assert_eq!(sender.send(23), Err(SendError(23)));
+
+= slide 'SyncSender', 'методи' do
+  example:
+    fn send(&self, t: T) -> Result<(), SendError<T>>
+    fn try_send(&self, t: T) -> Result<(), TrySendError<T>>
+
+  list:
+    `send` изпраща `t` и блокира ако буфера е пълен
+    връща грешка ако получателят е бил унищожен
+    `try_send` изпраща `t` и не блокира
+    връща грешка ако получателят е бил унищожен или буфера е пълен
+
+= slide 'SyncSender', 'методи' do
+  example:
+    let (sender, receiver) = mpsc::sync_channel(1);
+
+    assert_eq!(sender.try_send(12), Ok(()));
+    assert_eq!(sender.try_send(23), Err(TrySendError::Full(23)));
+
+    mem::drop(receiver);
+
+    assert_eq!(sender.try_send(23), Err(TrySendError::Disconnected(23)));
+
+= slide 'Множество получатели' do
+  list:
+    не може - каналите са multi-producer, single-consumer
+    `Receiver` не може да се клонира
+    `Receiver` e `Send`, но не е `Sync`
+
+  p.action Ако много искаме можем да си развием въображението
+  list:
+    `Arc<Mutex<Receiver>>`?
+    много канали (всеки към всеки)?
+    third party библиотека?
+    друга структура от данни?
+
+= slide 'Receiver', 'методи' do
+  example:
+    // блокира докато не получи съобщение
+    // връща грешка ако всички изпращачи са унищожени
+    fn recv(&self) -> Result<T, RecvError>
+
+    // не блокира
+    // връща грешка ако всички изпращачи са унищожени или няма съобщение в опашката
+    fn try_recv(&self) -> Result<T, TryRecvError>
+
+    // блокира за определено време
+    // връща грешка ако всички изпращачи са унищожени или е изтекло времето
+    fn recv_timeout(&self, timeout: Duration) -> Result<T, RecvTimeoutError>
+
+= slide 'Receiver', 'методи' do
+  example:
+    let (sender, receiver) = mpsc::channel();
+    let sender2 = sender.clone();
+
+    sender.send(12).unwrap();
+    sender2.send(23).unwrap();
+    mem::drop(sender);
+
+    assert_eq!(receiver.try_recv(), Ok(12));
+    assert_eq!(receiver.try_recv(), Ok(23));
+    assert_eq!(receiver.try_recv(), Err(TryRecvError::Empty));
+
+    mem::drop(sender2);
+
+    assert_eq!(receiver.try_recv(), Err(TryRecvError::Disconnected));
+
+= slide 'Receiver', 'методи' do
+  example:
+    let (sender, receiver) = mpsc::channel();
+
+    thread::spawn(move || {
+        for i in (0..50).rev() {
+            sender.send(i).unwrap();
+        }
+    });
+
+    while let Ok(msg) = receiver.recv() {
+        println!("received {}", msg);
+    }
+
+= slide 'Receiver', 'итератори' do
+  div style="display: flex; flex-direction: row; justify-content: center"
+    div style="width: 100%; padding: 10px; border-right: 1px solid gray;"
+      example:
+        for msg in receiver.iter() {
+            // ...
+        }
+
+        for msg in receiver.try_iter() {
+            // ...
+        }
+
+    div style="width: 100%; padding: 10px 10px 10px 40px;"
+      example:
+        while let Ok(msg) = receiver.recv() {
+            // ...
+        }
+
+        while let Ok(msg) = receiver.try_recv() {
+            // ...
+        }
+
+= slide 'Networking' do
+  p Стандартната библиотека имплементира networking примитиви в модула <code>std::net</code>
+
+= slide 'UDP', 'UdpSocket' do
+  example:
+    use std::net::UdpSocket;
+
+    // сокета се затваря на края на scope-a
+    {
+        let mut socket = UdpSocket::bind("127.0.0.1:34254")?;
+
+        // Получава една дейтаграма от сокета. Ако буфера е прекалено малък за съобщението,
+        // то ще бъде орязано.
+        let mut buf = [0; 10];
+        let (amt, src) = socket.recv_from(&mut buf)?;
+
+        // Редекларира `buf` като слайс от получените данни и ги праща в обратен ред.
+        let buf = &mut buf[..amt];
+        buf.reverse();
+        socket.send_to(buf, &src)?;
+    }
+
+
+= slide 'TCP', 'TcpStream' do
+  example:
+    use std::io::prelude::*;
+    use std::net::TcpStream;
+
+    // стриймът се затваря на края на scope-a
+    {
+        let mut stream = TcpStream::connect("127.0.0.1:34254").unwrap();
+
+        let _ = stream.write(&[1]);
+        let _ = stream.read(&mut [0; 128]);
+    }
+
+= slide 'TCP', 'TcpListener' do
+  example:
+    use std::net::{TcpListener, TcpStream};
+
+    fn handle_client(stream: TcpStream) {
+        // ...
+    }
+
+    let listener = TcpListener::bind("127.0.0.1:80").unwrap();
+
+    // примера конекции и ги обработва
+    for stream in listener.incoming() {
+        handle_client(stream?);
+    }
+
+= slide 'TCP', 'Simple chat' do
+  p Ще разгледаме проста чат система за демонстрация на нишки, канали и TCP
+
+  p
+    ' Пълния код може да се разгледа
+    a href="https://github.com/d3lio/simple-chat"
+      ' в Github
+
+= slide 'TCP', 'Simple chat' do
+  p Какво няма да обхванем:
+
+  list:
+    Няма да се занимаваме със целия error handling
+    Няма да използваме най-оптималните подходи, все пак е проста система
+
+= slide 'Simple chat', 'Server' do
+  example:
+    const LOCALHOST: &str = "127.0.0.1:1234";
+    const MESSAGE_SIZE: usize = 32;
+
+    fn main() {
+        let server = TcpListener::bind(LOCALHOST).expect("Listener failed to bind");
+        server.set_nonblocking(true).expect("Failed to initialize nonblocking");
+
+        // Stores client sockets
+        let mut clients = Vec::new();
+        let (sx, rx) = mpsc::channel::<String>();
+
+        loop {
+            /* accept */
+            /* broadcast */
+            thread::sleep(Duration::from_millis(100));
+        }
+    }
+
+= slide 'Simple chat', 'Server' do
+  p Използваме nonblocking sockets, за да може да не правим само accept в главната нишка
+
+= slide 'Server', 'Accepting clients' do
+  example:
+    // Try to accept a client
+    if let Ok((mut socket, addr)) = server.accept() {
+        println!("Client {} connected", addr);
+
+        clients.push(socket.try_clone().expect("Failed to clone client"));
+
+        let sx = sx.clone();
+        thread::spawn(move || loop {
+            /* try recv */
+            thread::sleep(Duration::from_millis(100));
+        });
+    }
+
+    /* message broadcast */
+
+= slide 'Server', 'Message broadcast' do
+  example:
+    if let Ok(msg) = rx.try_recv() {
+        // Try to send message from master channel
+        clients = clients.into_iter().filter_map(|mut client| {
+            let mut buf = msg.clone().into_bytes();
+            buf.resize(MESSAGE_SIZE, 0);
+
+            client.write_all(&buf).map(|_| client).ok()
+        }).collect::<Vec<_>>();
+    }
+
+= slide 'Server', 'Receiver loop' do
+  example:
+    let mut buf = vec![0; MESSAGE_SIZE];
+
+    // Try to receive message from client
+    match socket.read_exact(&mut buf) {
+        Ok(_) => {
+            let msg = buf.into_iter().take_while(|&x| x != 0).collect::<Vec<_>>();
+            let msg = String::from_utf8(msg).expect("Invalid utf8 message");
+
+            println!("{}: {:?}", addr, msg);
+            sx.send(msg).expect("Send to master channel failed");
+        },
+        Err(ref err) if err.kind() == ErrorKind::WouldBlock => (),
+        Err(_) => {
+            println!("Closing connection with: {}", addr);
+            break;
+        }
+    }
+
+= slide 'Simple chat', 'Client' do
+  example:
+    const LOCALHOST: &str = "127.0.0.1:1234";
+    const MESSAGE_SIZE: usize = 32;
+
+    fn main() {
+        let mut client = TcpStream::connect(LOCALHOST).expect("Stream failed to connect");
+        client.set_nonblocking(true).expect("Failed to initialize nonblocking");
+
+        let (sx, rx) = mpsc::channel::<String>();
+
+        thread::spawn(move || loop {
+            /* try recv */
+            /* try send */
+            sleep();
+        });
+
+        /* repl */
+    }
+
+= slide 'Client', 'REPL' do
+  example:
+    println!("Welcome!");
+    loop {
+        let mut buf = String::new();
+        io::stdin().read_line(&mut buf).expect("Reading form stdin failed");
+        let msg = buf.trim().to_string();
+
+        if msg == ":q" || sx.send(msg).is_err() { break }
+    }
+    println!("Bye!");
+
+= slide 'Client', 'receive message' do
+  p Прилича много на кода в server-а
+
+  example:
+    let mut buf = vec![0; MESSAGE_SIZE];
+
+    // Try to receive message from server
+    match client.read_exact(&mut buf) {
+        Ok(_) => {
+            let msg = buf.into_iter().take_while(|&x| x != 0).collect::<Vec<_>>();
+            let msg = String::from_utf8(msg).expect("Invalid utf8 message");
+            println!("message recv {:?}", msg);
+        },
+        Err(ref err) if err.kind() == ErrorKind::WouldBlock => (),
+        Err(_) => {
+            println!("Connection with the server closed");
+            break;
+        }
+    }
+
+= slide 'Client', 'send message' do
+  example:
+    let mut buf = vec![0; MESSAGE_SIZE];
+
+    // Try to send message
+    match rx.try_recv() {
+        Ok(msg) => {
+            let mut buf = msg.clone().into_bytes();
+            buf.resize(MESSAGE_SIZE, 0);
+            client.write_all(&buf).expect("Writing to socket failed");
+            println!("message sent {:?}", msg);
+        },
+        Err(TryRecvError::Empty) => (),
+        Err(TryRecvError::Disconnected) => break
+    }
