@@ -1,0 +1,119 @@
+= slide 'Административни неща' do
+  list:
+    Петък (15.12) сме в зала 200
+
+= slide 'Преговор', 'Нишки, канали' do
+  list:
+    По-рядко срещани синхронизационни примитиви: `Barrier`, `Condvar`, `RwLock`
+    MPSC (Multiple Producer, Single Consumer) канали
+    Networking (`UdpSocket`, `TcpStream`, `TcpListener`)
+    Пример: простичък чат
+
+= slide 'Домашно 3', 'грешки' do
+  list:
+    `str::len` брои байтове, не char-ове -- `.chars().count()` ви трябваше
+    Ред на грешките: първо `GameOver`, после `BadGuess`
+    Разнообразни дребни логически грешки. Твърде много `unwrap()`-ове?
+
+= slide 'Домашно 3', 'Demo' do
+  p
+    ' Пълния код:
+    a href="https://github.com/AndrewRadev/rust-hangman"
+      ' rust-hangman
+
+  example:
+    fn main() {
+        // ???
+    }
+
+= slide 'Домашно 3', 'Demo' do
+  p Парсене на команди
+
+  list:
+    Pattern-matching по първа буква или if-клаузи, it's all good
+    Помощна функция, която връща `Option` вместо `Result`, и позволява оператори-въпросчета?
+    Макроси за по-малко писане?
+
+= slide 'Домашно 3', 'Demo' do
+  p Как избираме дума?
+
+= slide 'Външни пакети' do
+  example:
+    [dependencies]
+    rand = "*"
+
+= slide 'Данни за играта?' do
+  list:
+    От предефиниран път на системата -- `$HOME/.hangman_words.txt`
+    От аргументите на командния ред -- `$ hangman wordlist.txt`
+    Вградени в binary-то чрез `include_str!`
+
+= slide 'Локално инсталиране на пакет' do
+  list:
+    `cargo install`, а ако вече е било викнато, `cargo install --force`
+    Инсталира нещата в `~/.cargo/bin/`
+    `hangman wordlist.txt`
+
+= slide 'Debug-ване', 'ENV vars' do
+  example:
+    pub fn clear_screen() {
+        if env::var("DEBUG").is_ok() {
+            return;
+        }
+
+        print!("{}[2J", 27 as char);
+        print!("{}[1;1H", 27 as char);
+    }
+
+  ' <pre>
+    DEBUG=1 cargo run some-file.txt
+    DEBUG=1 hangman some-file.txt
+    </pre>
+
+= slide 'По-сложна обработка на аргументи чрез structopt' do
+  example:
+    [dependencies]
+    rand = "*"
+    structopt = "*"
+    structopt-derive = "*"
+
+= slide 'По-сложна обработка на аргументи чрез structopt' do
+  ' <pre>
+    $ hangman --wordlist=words.txt --attempts=10 --debug
+    $ hangman -w words.txt -a 10 -d
+    $ hangman --help
+    $ hangman --version
+    </pre>
+
+= slide 'По-сложна обработка на аргументи чрез structopt' do
+  example:
+    extern crate structopt;
+    #[macro_use]
+    extern crate structopt_derive;
+    use structopt::StructOpt;
+
+    #[derive(StructOpt, Debug)]
+    #[structopt(name="hangman", about="A game of Hangman")]
+    pub struct Options {
+        #[structopt(short="w", long="wordlist", help="The path to a word list")]
+        wordlist_path: Option<String>,
+
+        #[structopt(short="a", long="attempts", help="The number of attempts to guess the word", default_value="10")]
+        attempts: u32,
+
+        #[structopt(short="d", long="debug", help="Show debug info")]
+        debug: bool,
+    }
+
+= slide 'Ограничения на structopt' do
+  list:
+    Трудно дебъгване на грешки (доста магия)
+    Липса на гъвкавост?
+    В краен случай, може би решението е (използвания отдолу пакет) [clap](https://github.com/kbknapp/clap-rs)
+
+= slide 'Още полезни пакети' do
+  list:
+    [clap](https://github.com/kbknapp/clap-rs) -- по-сложен command-line parsing, мощен, доста за четене
+    [lazy_static](https://github.com/rust-lang-nursery/lazy-static.rs) -- дефиниране на константи с код
+    [failure](https://github.com/withoutboats/failure) -- помага за дефиниране на грешки и конвертиране между тях
+    [serde](https://github.com/serde-rs/serde) -- за писане и четене на структурирани данни
