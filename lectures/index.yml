@@ -89,6 +89,11 @@
   slug: 17-channels
 
 18:
-  title: "18. Външни зависимости: пакети, данни (live demo)"
+  title: "18. Външни зависимости: пакети, данни"
   date: 2017-12-13
   slug: 18-dependencies
+
+19:
+  title: "19. Макроси"
+  date: 2017-12-15
+  slug: 19-macros
