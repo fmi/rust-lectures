@@ -1,0 +1,570 @@
+= slide 'Административни неща' do
+  list:
+    Петък нямаме час
+    Четвърто домашно
+    Първо предизвикателство
+    Проекти
+
+= slide 'Преговор' do
+  list:
+    Макроси
+
+= slide 'Foreign Function Interface (ffi)' do
+  list:
+    механизъм за извикване на функции написани на други езици
+    в случая `C`
+
+= slide 'Викане на C функции от Rust' do
+  div style="display: flex; flex-direction: row; justify-content: center"
+    div style="width: 100%; padding: 10px; border-right: 1px solid gray;"
+      pre
+        ' // main.c
+
+          int add_in_c(int a, int b) {
+              return a + b;
+          }
+
+    div style="width: 100%; padding: 10px 10px 10px 40px;"
+      example:
+        // main.rs
+
+        use std::os::raw::c_int;
+
+        extern {
+            fn add_in_c(a: c_int, b: c_int) -> c_int;
+        }
+
+= slide 'Викане на C функции от Rust', 'extern' do
+  list:
+    extern блок дефинира символи (функции или глобални променливи) към които ще се линква
+    върши работата на header file в C/C++
+    типа на дефинираните функции е `extern "abi" unsafe fn(args) -> result`
+    `add_in_c: extern "C" unsafe fn(c_int, c_int) -> c_int`
+
+= slide 'Викане на C функции от Rust', 'extern' do
+  p Външни функции са unsafe, защото компилатора не може да гарантира, че работят правилно
+
+  example:
+    extern {
+        fn add_in_c(a: c_int, b: c_int) -> c_int;
+    }
+
+    fn main() {
+        let res = unsafe { add_in_c(1, 2) };
+        println!("{}", res);
+    }
+
+= slide 'Викане на C функции от Rust', 'Calling convention' do
+  p Calling conventions се задават на extern блока. По подразбиране е `C`
+
+  example:
+    extern "C" {
+        fn add_in_c(a: c_int, b: c_int) -> c_int;
+    }
+
+    extern "system" {
+        fn SetEnvironmentVariableA(n: *const u8, v: *const u8) -> c_int;
+    }
+
+= slide 'Викане на C функции от Rust', 'Calling convention' do
+  list:
+    определя как се извиква функцията
+    как се подават параметрите и връща резултата (регистри, стек)
+    как се управлява стека
+    кои регистри за какво могат да се използват
+    и т.н.
+
+= slide 'Викане на C функции от Rust', 'Calling convention' do
+  p Calling convention-а задължително трябва да съвпада с това как е компилирана функцията в библиотеката
+
+  p.action
+    ' <code>"Rust"</code> - каквото rustc използва за нормалните функции. Не се използва при ffi.
+
+  p.action
+    ' <code>"C"</code> - каквото C компилаторът използва по подразбиране. Това почти винаги е правилното,
+      освен ако не е казано друго изрично или библиотеката е компилирана с друг компилатор.
+
+  p.action
+    ' <code>"system"</code> - използва се за системни функции (на Windows). Или просто използвайте crate-а <code>winapi</code>.
+
+= slide 'Викане на C функции от Rust' do
+  pre
+    ' error: linking with `cc` failed: exit code: 1
+        |
+        = note: "cc" ...
+        = note: target/debug/deps/ffi-64ac5f7deef7d1bb.ffi0.rcgu.o: In function `ffi::main':
+                src/main.rs:8: undefined reference to `add_in_c'
+                collect2: error: ld returned 1 exit status
+
+  p.action Очаквано, не сме казали на компилатора къде да намери функцията
+
+= slide 'Linking', 'Ръчният начин' do
+  p Static linking
+
+  pre
+    ' # компилираме C кода до math.lib / libmath.a
+
+      cargo rustc -- -L . -l math           # или
+      cargo rustc -- -L . -l static=math
+
+  p Dynamic linking
+
+  pre
+    ' # компилираме C кода до math.dll / libmath.so
+
+      cargo rustc -- -L . -l math           # или
+      cargo rustc -- -L . -l dylib=math
+
+= slide 'Linking', 'Правилният начин' do
+  example:
+    #[link(name="math")]
+    extern {
+        fn add_in_c(a: c_int, b: c_int) -> c_int;
+    }
+
+  list:
+    `#[link(name="math")]` - линква към динамичната библиотека `math`
+    `#[link(name="math", kind="static")]` - линква към статичната библиотека `math`
+    `#[link(name="math", kind="framework")]` - линква към MacOs framework `math`
+
+= slide 'Linking', 'Правилният начин' do
+  list:
+    Обикновенно динамичните библиотеки се намират в някоя стандартна директория
+    Тогава `#[link(name="library_name")]` е достатъчно
+    За статична библиотека все още трябва да кажем на компилатора къде да я намери
+
+  pre.action
+    ' cargo rustc -- -L .
+
+= slide 'Linking', 'Странности' do
+  p Няма значение на кой блок е поставен <code>#[link]</code> атрубута
+
+  example:
+    #[link(name="foo")]
+    #[link(name="bar")]
+    extern {}
+
+    extern {
+        fn foo_init();
+        fn foo_stuff(x: c_int);
+    }
+
+    extern {
+        fn bar_init();
+        fn bar_stuff() -> c_int;
+    }
+
+= slide 'Build scripts' do
+  p Cargo предоставя възможност за изпълняване на скрипт преди компилиране на crate-a
+
+  p
+    a href="http://doc.crates.io/build-script.html" http://doc.crates.io/build-script.html
+
+= slide 'Build scripts' do
+  pre
+    ' // Cargo.toml
+
+      [package]
+      name = "ffi"
+      version = "0.1.0"
+      authors = ["..."]
+      build = "build.rs"
+
+
+      // build.rs
+
+      fn main() {
+          // rust code
+      }
+
+= slide 'Build scripts' do
+  list:
+    build.rs няма достъп до нормалните dependencies
+    вместо това използва build-dependencies
+
+  pre.action
+    ' // Cargo.toml
+
+      [build-dependencies]
+      ...
+
+= slide 'Build scripts' do
+  list:
+    cargo прихваща stdout на build скрипта
+    всеки ред който започва с `cargo:` се разбира като команда
+    форматът е `cargo:key=value`
+    `cargo:rustc-link-search=.`
+
+= slide 'Build scripts' do
+  example:
+    // build.rs
+
+    fn main() {
+        println!("cargo:rustc-link-search=.");
+    }
+
+  pre
+    ' cargo build
+      cargo run
+
+= slide 'Callbacks' do
+  div style="display: flex; flex-direction: row; justify-content: center"
+    div style="width: 100%; padding: 10px; border-right: 1px solid gray;"
+      pre
+        ' // main.c
+
+          typedef int (*callback)(int);
+
+          int add_in_c(int a, int b) {
+              return a + b;
+          }
+
+          int apply(int a, callback op) {
+              return op(a);
+          }
+
+    div style="width: 100%; padding: 10px 10px 10px 40px;"
+      example:
+        // main.rs
+
+        #[link(name="math")]
+        extern "C" {
+            fn add_in_c(a: c_int, b: c_int) -> c_int;
+            fn apply(a: c_int, op: fn(c_int) -> c_int) -> c_int;
+        }
+
+        fn cube(x: i32) -> i32 { x * x * x }
+
+        fn main() {
+            println!("{}", unsafe { apply(11, cube) });
+        }
+
+= slide 'Callbacks' do
+  pre
+    ' $ cargo build
+
+      warning: found function pointer with Rust calling convention in foreign module;
+               consider using an `extern` function pointer
+       --> src/main.rs:7:28
+         |
+       7 |     fn apply(a: c_int, op: fn(c_int) -> c_int) -> c_int;
+         |                            ^^^^^^^^^^^^^^^^^^
+         |
+         = note: #[warn(improper_ctypes)] on by default
+
+= slide 'Callbacks' do
+  list:
+    компилаторът ни подсказва
+    `apply` очаква `int (*callback)(int)`, т.е. `extern "C" fn(c_int) -> c_int`
+    ние му подаваме `fn(c_int) -> c_int`, т.е. `extern "Rust" fn(c_int) -> c_int`
+
+= slide 'Callbacks' do
+  example:
+    // main.rs
+
+    #[link(name="math")]
+    extern "C" {
+        fn add_in_c(a: c_int, b: c_int) -> c_int;
+        fn apply(a: c_int, op: extern fn(c_int) -> c_int) -> c_int;
+    }
+
+    extern fn cube(x: i32) -> i32 { x * x * x }
+
+    fn main() {
+        println!("{}", unsafe { apply(11, cube) });
+    }
+
+  pre
+    ' 1331
+
+= slide 'Panics' do
+  p A panic! across an FFI boundary is undefined behavior
+
+  p Когато подаваме или експортираме rust функции трябва да се подсигурим,
+    че те не могат да се панират. В тази ситуация е удобно да се използва <code>catch_unwind</code>
+
+  example:
+    extern fn oh_no() -> i32 {
+        let result = catch_unwind(|| {
+            panic!("Oops!");
+        });
+
+        match result {
+            Ok(_) => 0,
+            Err(_) => 1,
+        }
+    }
+
+= slide 'Други неща' do
+  list:
+    [Variadic functions](https://doc.rust-lang.org/book/first-edition/ffi.html#variadic-functions)
+    [Importing global variables](https://doc.rust-lang.org/book/first-edition/ffi.html#accessing-foreign-globals)
+
+= slide 'Writing wrappers' do
+  p Много често е удобно да напишем "rusty" интерфейс към библиотеката
+
+  example:
+    extern crate libc;
+    use libc::{c_int, c_size_t};
+
+    #[link(name="math")]
+    extern {
+        fn math_array_sum(arr: *const c_int, len: c_size_t) -> c_int;
+    }
+
+    /// Safe wrapper
+    pub fn array_sum(arr: &[c_int]) {
+        unsafe { math_array_sum(arr.as_ptr(), arr.len()) }
+    }
+
+= slide 'Writting wrappers' do
+  p Други
+
+  list:
+    Конвертиране на кодове за грешки до `Option` или `Result`
+    Методи
+    Деструктори
+
+= slide 'Споделяне на структури' do
+  p Структурите в rust нямат определено подреждане на полетата.
+
+  div style="display: flex; flex-direction: row; justify-content: center"
+    div style="width: 100%; padding: 10px; border-right: 1px solid gray;"
+      pre
+        ' // main.c
+
+          struct FooBar {
+              int foo;
+              short bar;
+          };
+
+          void foobar(FooBar x) {
+              // ...
+          }
+
+    div style="width: 100%; padding: 10px 10px 10px 40px;"
+      example:
+        extern {
+            fn foobar(x: FooBar);
+        }
+
+        struct FooBar {
+            foo: c_int,
+            bar: c_short,
+        }
+
+= slide 'Споделяне на структури' do
+  pre
+    ' warning: found struct without foreign-function-safe representation annotation in foreign module,
+               consider adding a #[repr(C)] attribute to the type
+       --> src/main.rs:9:18
+         |
+       9 |     fn foobar(x: FooBar);
+         |                  ^^^^^^
+         |
+         = note: #[warn(improper_ctypes)] on by default
+
+= slide 'Споделяне на структури' do
+  p За да споделим структура между Rust и C трябва да забраним на компилатора да размества полетата с <code>#[repr(C)]</code>
+
+  div style="display: flex; flex-direction: row; justify-content: center"
+    div style="width: 100%; padding: 10px; border-right: 1px solid gray;"
+      pre
+        ' // main.c
+
+          struct FooBar {
+              int foo;
+              short bar;
+          };
+
+          void foobar(FooBar x) {
+              // ...
+          }
+
+    div style="width: 100%; padding: 10px 10px 10px 40px;"
+      example:
+        extern {
+            fn foobar(x: FooBar);
+        }
+
+        #[repr(C)]
+        struct FooBar {
+            foo: c_int,
+            bar: c_short,
+        }
+
+= slide 'Споделяне на структури' do
+  p За плътно пакетирани структури се използва <code>#[repr(C, packed)]</code>
+
+  div style="display: flex; flex-direction: row; justify-content: center"
+    div style="width: 100%; padding: 10px; border-right: 1px solid gray;"
+      pre
+        ' // main.c
+
+          // gcc синтаксис
+          struct __atribute((__packed__)) FooBar {
+              int foo;
+              short bar;
+          };
+
+          void foobar(FooBar x) {
+              // ...
+          }
+
+    div style="width: 100%; padding: 10px 10px 10px 40px;"
+      example:
+        extern {
+            fn foobar(x: FooBar);
+        }
+
+        #[repr(C, packed)]
+        struct FooBar {
+            foo: c_int,
+            bar: c_short,
+        }
+
+= slide 'Споделяне на низове' do
+  list:
+    Низовете в Rust са utf-8 encoded, нямат терминираща нула и си пазят размера отделно
+    Низовете в C могат да имат всякакъв encoding и завършват с терминираща нула
+    Трябва да конвертираме от единия до другия вид когато изпращаме низове
+
+= slide 'Споделяне на низове', 'CString' do
+  p
+    ' Низ със собственост, съвместим със C. <br/>
+      Не съдържа нулеви байтове (<code>'\0'</code>) във вътрешността и завършва на терминираща нула.
+
+  example:
+    use std::ffi::CString;
+
+    // създава се от неща които имплементират Into<Vec<u8>>,
+    // в това число &str и String
+    let hello = CString::new("Hello!").unwrap();
+
+    unsafe {
+        print(hello.as_ptr());
+    }
+
+= slide 'Споделяне на низове', 'CString' do
+  p Какъв е проблема?
+
+  example:
+    extern {
+        fn print(s: *const c_char);
+    }
+
+    unsafe {
+        print(CString::new("Hello!").unwrap().as_ptr());
+    }
+
+= slide 'Споделяне на низове', 'CString' do
+  p Работим с голи указатели, а не с референции. Трябва да се погрижим паметта да живее достатъчно!
+
+  example:
+    let hello = CString::new("Hello!").unwrap();
+    let ptr = hello.ptr();                                // `ptr` е валиден докато `hello` е жив
+    unsafe { print(ptr) };                                // Ок
+
+    let ptr = CString::new("Hello!").unwrap().as_ptr();   // временния CString се деалокира
+    unsafe { print(ptr) };                                // подаваме dangling pointer
+
+= slide 'Споделяне на низове', 'CStr' do
+  list:
+    Borrowed CString
+    удобно ако C код ни даде низ
+
+= slide 'Option and the "nullable pointer optimization"' do
+  example:
+    // c
+
+    typedef int (*callback)(int);
+
+    // callback can be a function pointer or NULL
+    void register(f: callback);
+
+
+
+    // rust
+    extern "C" {
+        /// Registers the callback.
+        fn register(cb: Option<extern "C" fn(c_int) -> c_int>);
+    }
+
+= slide 'Opaque types' do
+  p Много често C код използва opaque types
+
+  pre
+    ' // c
+
+      struct Foo;
+
+      Foo* init();
+      int stuff(Foo* foo);
+
+= slide 'Opaque types' do
+  p За да представим такъв тип в rust можем да използваме празен enum
+
+  p Не можем да създадем променлива от този тип, защото enum-а няма варианти
+
+  example:
+    enum Foo {}
+
+    extern {
+        fn init() -> *const Foo;
+        fn stuff(foo: *const Foo) -> c_int;
+    }
+
+= slide 'Компилиране до библиотека' do
+  p
+    ' До сега сме правили библиотеки за Rust чрез <code>cargo new --lib</code>. При компилация
+      този вид crate ни дава <code>rlib</code> и има следния <code>Cargo.toml</code>
+
+  example:
+    [package]
+    name = "project_name"
+    version = "0.1.0"
+    authors = ["..."]
+
+    [dependencies]
+
+= slide 'Компилиране до библиотека' do
+  p
+    ' Това е достатъчно когато правим crate за Rust екосистемата, но понякога се налага да създадем
+      специфично статична или динамична библиотека
+
+= slide 'Компилиране до библиотека' do
+  p В този случай може да използвате <code>Cargo.toml</code>, за да укажете това
+
+  example:
+    [package]
+    name = "project_name"
+    version = "0.1.0"
+
+    [lib]
+    crate-type = ["..."]
+
+    [dependencies]
+
+= slide 'Компилиране до библиотека' do
+  p на мястото на триеточието може да поставим следните типове
+
+  list:
+    `bin` - binary
+    `lib` - компилатора избира типа на библиотеката
+    `rlib` - статична Rust библиотека с метаданни `.rlib`
+    `dylib` - динамична Rust библиотека `.so`, `.dylib`, `.dll`
+    `staticlib` - статична native библиотека `.a`, `.lib`
+    `cdylib` - динамична native библиотека предназначена за използване от други езици `.so`, `.dylib`, `.dll`
+    `proc-macro` - процедурен макрос
+
+= slide 'Компилиране до библиотека' do
+  p При компилация с <code>cargo</code> файловете се намират в <code>target/${target_type}</code>
+
+= slide 'bindgen crate' do
+  p <a href="https://github.com/rust-lang-nursery/rust-bindgen">Bindgen</a>
+
+= slide 'Ресурси' do
+  list:
+    [The Rust Book, First Edition](https://doc.rust-lang.org/book/first-edition/ffi.html)
+    [Cargo Manifest](http://doc.crates.io/manifest.html)
+    [Rust Reference Manual](https://doc.rust-lang.org/reference/linkage.html)

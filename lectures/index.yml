@@ -97,3 +97,8 @@
   title: "19. Макроси"
   date: 2017-12-15
   slug: 19-macros
+
+20:
+  title: "20. FFI"
+  date: 2017-12-20
+  slug: 20-ffi
