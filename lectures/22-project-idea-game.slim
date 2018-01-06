@@ -1,0 +1,214 @@
+= slide 'Административни неща' do
+  list:
+    Четвърто домашно приключи
+    Първо предизвикателство приключи
+    Мислете за проекти!
+
+= slide 'Преговор' do
+  list:
+    Лексиране, Интерпретиране, Филмиране
+
+= slide 'Идея за проект - Игра' do
+  img src="images/shooter.png" height="500px"
+
+= slide 'Инсталация на ggez' do
+  p Инсталацията на ggez включва инсталиране на необходимите SDL2 библиотеки. Това може да е сравнително досадно, понеже включва копиране на разни dll-и, поне на Windows.
+
+  p Инструкции: <a href="https://github.com/Rust-SDL2/rust-sdl2#user-content-requirements">Rust-SDL2</a>.
+
+= slide 'Инсталация на ggez' do
+  p Самата библиотека, в конкретния момент, е най-добре да се инсталира от git, понеже последната версия, 0.4, още не е release-ната. Това не е нещо, което е добре да правите често, но е добре да знаете *как* да го правите.
+
+  p Имайте предвид че в <code>Cargo.lock</code> ще се запази *конкретна* версия на библиотеката, така че всеки следващ download ще е на същия код. Няма как да ви се счупи кода без да сте го докосвали, освен ако ръчно не ъпдейтнете версията.
+
+  ' <pre>
+    [dependencies]
+    ggez = { git = "https://github.com/ggez/ggez" }
+    </pre>
+
+= slide 'Скелет на играта' do
+  p Фреймурка очаква да дефинирате ваш тип, който да имплементира трейта <code>ggez::event::EventHandler</code>
+
+  example:
+    struct MainState { /* ... */ }
+
+    impl event::EventHandler for MainState {
+        fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+            // Променяме състоянието на играта
+            Ok(())
+        }
+
+        fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+            graphics::clear(ctx);
+            // Рисуваме неща
+            graphics::present(ctx);
+            Ok(())
+        }
+    }
+
+= slide 'Скелет на играта' do
+  p В <code>main</code> функцията, създаваме инстанция на нашия тип, конфигурация и "контекст" (за рисуване/звуци), и стартираме event loop-а
+
+  example:
+    pub fn main() {
+        let conf = conf::Conf::new();
+        let ctx = &mut Context::load_from_conf("shooter", "ggez", conf).unwrap();
+        let state = &mut MainState::new(ctx).unwrap();
+
+        if let Err(e) = event::run(ctx, state) {
+            println!("Error encountered: {}", e);
+        } else {
+            println!("Game exited cleanly.");
+        }
+    }
+
+= slide 'Зареждане на ресурси' do
+  p За да може библиотеката да си намери картинки и звуци при компилация, добре е да добавим локалната директория "resources" (или както искаме да я наречем). Когато разпространяваме играта, тя ще търси по default папка до exe-то, която се казва "resources", но подкарвайки я с <code>cargo run</code>, е по-удобно да използваме друга:
+
+  example:
+    // ...
+    // let ctx = &mut Context::load_from_conf("shooter", "ggez", conf).unwrap();
+
+    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+        let mut path = path::PathBuf::from(manifest_dir);
+        path.push("resources");
+        ctx.filesystem.mount(&path, true);
+    }
+
+    // if let Err(e) = event::run(ctx, state) {
+    // ...
+
+= slide 'Update' do
+  example:
+    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+        if self.game_over { return Ok(()); }
+        const DESIRED_FPS: u32 = 60;
+
+        while timer::check_update_time(ctx, DESIRED_FPS) {
+            let seconds = 1.0 / (DESIRED_FPS as f32);
+
+            self.time_until_next_enemy -= seconds;
+            if self.time_until_next_enemy <= 0.0 {
+                // Създаваме следващия противник
+                // self.time_until_next_enemy = ...;
+            }
+
+            // Обновяваме позиция на играча, на изстрелите, ...
+        }
+    }
+
+= slide 'Update' do
+  list:
+    Метода връща `GameResult<()>`, така че успешен край ще е `Ok(())`, е неуспешен край вероятно ще дойде от грешка в някоя от функциите за чертане, звуци, и т.н.
+    Всичко се случва в цикъл, който ще се викне 60 пъти (или колкото искаме) в секунда, плавно (надяваме се).
+    Затова имаме нужда от `seconds`, или `time_delta`, или както го наречете -- изминалото време в този цикъл, като части от секундата. Умножаваме тази стойност по всякакво движение, за получим равномерна промяна.
+    Състоянието става на тези квантове време, така че няма как да правим продължителна промяна на състоянието -- анимации няма как да станат с "линеен" код. Променяме състоянието (играча е в състояние "стреляне", "движение", и т.н.), и движим позицията му както подобава.
+
+= slide 'Update' do
+  p Най-простата форма на <code>update</code> би могла да изглежда така:
+
+  example:
+    self.position += self.velocity * seconds;
+
+  p Променяме <code>velocity</code> в зависимост от, например, задържан клавиш-стрелкичка, или в зависимост от AI-а на противниците, или както си пожелаем. Имаме пълната мощ на библиотеката <a href="http://nalgebra.org/">nalgebra</a>, която вероятно няма да ни трябва за много сложни неща:
+
+  example:
+    #[derive(Debug)]
+    pub struct Enemy {
+        position: Point2,
+        velocity: Vector2,
+        // ... и каквото още ни трябва ...
+    }
+
+  p Точки и вектори могат да се събират с вектори, вектори могат да се умножават с числа. И други работи, но вижте документацията.
+
+= slide 'Input' do
+  p Има още два метода, които могат да се имплементират за <code>event::EventHandler</code>:
+
+  example:
+    fn key_down_event(&mut self,
+                      _ctx: &mut Context,
+                      keycode: event::Keycode,
+                      _keymod: event::Mod,
+                      _repeat: bool) {
+        match keycode {
+            event::Keycode::Space => self.input.fire = true,
+            // ... Други клавиши ...
+            _ => (), // Do nothing
+        }
+    }
+
+  p И еквивалентния за key up ...
+
+= slide 'Input' do
+  p Има още два метода, които могат да се имплементират за <code>event::EventHandler</code>:
+
+  example:
+    fn key_up_event(&mut self,
+                    _ctx: &mut Context,
+                    keycode: event::Keycode,
+                    _keymod: event::Mod,
+                    _repeat: bool) {
+        match keycode {
+            event::Keycode::Space => self.input.fire = false,
+            // ... Други клавиши ...
+            _ => (), // Do nothing
+        }
+    }
+
+= slide 'Drawing' do
+  example:
+    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+        graphics::clear(ctx);
+        if self.game_over {
+            let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 24)?;
+            let text = graphics::Text::new(ctx, "Game Over!", &font)?;
+            let center = Point2::new(self.screen_width as f32 / 2.0, self.screen_height as f32 / 2.0);
+            graphics::draw_ex(ctx, &text, graphics::DrawParam {
+                dest: center,
+                offset: Point2::new(0.5, 0.5),
+                .. Default::default()
+            })?;
+            graphics::present(ctx);
+            return Ok(())
+        }
+
+        // ...
+
+        graphics::present(ctx);
+        Ok(())
+    }
+
+= slide 'Drawing' do
+  p Просто викане на методи в модула <code>graphics::</code> Когато имаме координатите и състоянието на противници, играч, изстрели, сцена, фон, и прочее, всичко се свежда до това да извикаме методи, които казват на графичната система какво да нарисува и къде.
+
+= slide 'Collision detection' do
+  p Не ни трябва нищо сложно за тази конкретна игра. За всеки противник и всеки изстрел, проверяваме дали изстрела е в противника:
+
+  example:
+    for enemy in &mut self.enemies {
+        for shot in &mut self.shots {
+            if enemy.bounding_rect().contains(shot.pos) {
+                shot.is_alive = false;
+                enemy.is_alive = false;
+                self.score += 1;
+                let _ = self.assets.boom_sound.play();
+            }
+        }
+    }
+
+= slide 'Съвети' do
+  list:
+    Карайте стъпка по стъпка и няма да имате проблеми. Правете "актьорите" един по един, движете ги, проверявайте дали всичко е наред.
+    Пишете си функции за дебъгване -- за чертаене на кутийка около противника, например, да видите дали collision-а работи като хората.
+    Извличайте константи с добри имена: <code>PLAYER_MOVE_SPEED</code>, <code>GRAVITY_ACCELERATION</code> са добри константи, които може лесно да промените за дебъгване и натаманяване. <code>THIRTY_TWO</code> и <code>FIVE_HUNDRED</code> не са.
+
+= slide 'Ресурси' do
+  list:
+    Тази игра: [rust-shooter](https://github.com/AndrewRadev/rust-shooter)
+    Звукови ефекти: [Freesound](https://freesound.org/)
+    Инсталиране на SDL2: [Rust-SDL2](https://github.com/Rust-SDL2/rust-sdl2#user-content-requirements)
+    Най-простия пример: [Super Simple](https://github.com/ggez/ggez/blob/master/examples/super_simple.rs)
+    Най-интересния пример: [Astroblasto](https://github.com/ggez/ggez/blob/master/examples/astroblasto.rs)
+    Лекция от RustFest Zurich: [Beyonce Brawles](https://youtu.be/str_mex__0M)
+    По-генерална помощ за gamedev (множко за простичък проект, но интересно четиво in general): [Game Programming Patterns](http://gameprogrammingpatterns.com/)

@@ -104,6 +104,11 @@
   slug: 20-ffi
 
 21:
-  title: "21. Идея за проект : интерпретатор"
+  title: "21. Идея за проект: интерпретатор"
   date: 2018-01-03
   slug: 21-project-idea-interpreter
+
+22:
+  title: "22. Идея за проект: игра"
+  date: 2018-01-05
+  slug: 22-project-idea-game
