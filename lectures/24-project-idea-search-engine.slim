@@ -1,0 +1,28 @@
+= slide 'Административни неща' do
+  list:
+    Няма пето домашно :/
+    Второ предизвикателство
+    Вижте тази новина за повече информация: [https://fmi.rust-lang.bg/announcements/10](https://fmi.rust-lang.bg/announcements/10)
+
+= slide 'Идея за проект - Search engine' do
+  p Четвърто домашно може да се разшири доста, в разнообразни идеи. Едно просто разширение може да се намери ей тук: <a href="https://github.com/AndrewRadev/rust-bookworm">AndrewRadev/rust-bookworm</a>
+
+= slide 'Идея за проект - Search engine' do
+  p Разширението включва:
+
+  list:
+    Trait "Indexable", вместо да индексираме само и единствено низове.
+    Тип "Book", който да е "Indexable" -- чете думите от файл
+    Интерфейс, който търси рекурсивно всички txt файлове в определена директория и дава конзола, в която да се пишат заявки
+    Паралелно индексиране в 4 нишки
+
+= slide 'Идея за проект - Search engine' do
+  p Кода може да се напише и по-добре, и да се тества доста по-обилно. Но идеите са там, и може да се изчистят и разширят. Разни посоки, в които може да се отведе подобен проект:
+
+  list:
+    По-смислен алгоритъм: триграми, вместо думи (както [Google](https://swtch.com/~rsc/regexp/regexp4.html) правят).
+    По-смислен алгоритъм: думи, но обработени с някакви [stemming алгоритми](https://nlp.stanford.edu/IR-book/html/htmledition/stemming-and-lemmatization-1.html).
+    Обработка не само на txt файлове, но и на doc, pdf, mp3 (или поне ID3 таговете им), zip/rar/gz...
+    Вместо търсене по думи, търсене по идентификатори в source code. Подобно на [ctags](https://en.wikipedia.org/wiki/Ctags) или [cscope](http://cscope.sourceforge.net/).
+    Persist-ване на индекса във файл, и зареждане upon boot: JSON, YAML, ctags-compatible tags, gzip-нати CSV-та...
+    Следене за промени и селективно ъпдейтване на индекса.
