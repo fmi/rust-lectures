@@ -1,0 +1,80 @@
+= slide 'Административни неща' do
+  list:
+    Пълния тест за задача 4 е качен в [rust-homework](https://github.com/fmi/rust-homework)
+    Проект
+    Предизвикателство
+
+= slide 'Преговор' do
+  p Домашно 4, ама малко по-fancy, с индексиране на книги
+
+= slide 'Threadpools' do
+  p
+    ' Crate-ове <a href=https://crates.io/crates/rayon">rayon</a>, <a href=https://crates.io/crates/threadpool">threadpool</a>, <a href=https://crates.io/crates/scoped_threadpool">scoped_threadpool</a> и други.
+
+  p
+    ' </code>rayon</code> е за момента най-завършената и оптимизирана библиотека. Използва глобален thread pool. Имплементира паралелни итератори и </code>join</code> за divide and conquer алгоритми, които сами пресмятат как е най-добре да разпределят работата върху наличните нишки.
+
+  p
+    ' </code>rayon</code> също така позволява да си създадем собствени thread pool-ове, или да достъпим глобалния thread pool и да пускаме задачи в него, подобно на стандартна thread pool библиотека.
+
+= slide 'Lock free' do
+  p
+    ' Програмиране на паралелни програми без използване на външна синхронизация, например <code>Mutex</code> или <code>RwLock</code>. Използват се атомарни операции - процесорни инструкции които гарантират, че операцията ще се извърши цялостно, т.е. няма да се наблюдават частични резултати. Повечето инструкции са експортирани като методи на атомарните типове като <a href="https://doc.rust-lang.org/stable/std/sync/atomic/struct.AtomicUsize.html">AtomicUsize</a>.
+
+  p
+    ' Lock free алгоритми се пишат трудно, защото дори и отделните операции да са атомарни, няколко поредни операции не са, поради което трябва да предвидим всички възможни начини за изпълнение и да сме сигурни че алгоритъма винаги ще работи коректно. В този случай Rust не може да ни помогне, защото той няма как да провери, че логиката на програмата ни е вярна.
+
+  p
+    ' Lock free алгоритмите имат предимството, че не могат да влязат в deadlock. Освен това обикновено са по-бързи, защото се спестяват системни извиквания (напр. за заключване и отключване на mutex). Затова са удобни за използване в горещ код, т.е. код който се изпълнява много често. Често се използват lock free опашки и стекове. Каналите в Rust също са lock free, освен функциите които блокират.
+
+= slide 'Lock free' do
+  p
+    ' <a href="">crossbeam</a> е crate, съдържащ имплементация на различни lock-free структури от данни.
+
+  p
+    ' Забележка от README-то
+    blockquote
+      ' This crate is outdated. The Crossbeam project is currently in a transition period. We are rewriting the epoch garbage collector, as well as several other utilities and adding new structures. To follow the progress, please take a look at other crates in the project <a href="https://github.com/crossbeam-rs">here</a>. When the transition is complete, this crate will be updated to use the new code.
+
+  p
+    ' Crossbeam екипа също в момента разработват multi-producer multi-consumer channel <a href="https://github.com/crossbeam-rs/crossbeam-channel">crossbeam-channel</a>.
+
+  p
+    ' П.С. Aaron Turon има интересен блог пост за това как се правят lock free структури от данни в Rust. <br/>
+      <a href="https://aturon.github.io/blog/2015/08/27/epoch/">Lock-freedom without garbage collection</a>
+
+= slide 'Benchmarks' do
+  ul
+    li Изискват nightly rust, но само за пускането на бенчмарковете, не е нужно проекта да е nightly
+    li Дефинират се с анотация <code>#[bench]</code>
+    li Пускат се с <code>cargo bench</code>
+    li На функцията ни се подава обект от тип <code>Bencher</code>, който има метод <code>iter()</code>
+    li Кодът в <code>iter()</code> се изпълнява много пъти и се замерва времето за изпълнение
+    li Кодът извън <code>iter()</code> не се замерва
+    li Слагат се при unit тестовете, или в <code>benches/whatever.rs</code>
+
+= slide 'Benchmarks' do
+  example:
+    #![feature(test)]
+
+    extern crate test;
+    use test::Bencher;
+
+    extern crate parallel_dfs;
+    use parallel_dfs::dfs::single_threaded;
+    use parallel_dfs::graph::AdjLists as Graph;
+
+    #[bench]
+    fn single_threaded_n_4k_m_400k(bencher: &mut Bencher) {
+        let graph = Graph::generate(4_000, 400_000, Some(&SEED));
+        bencher.iter(|| single_threaded::run(&graph));
+    }
+
+= slide 'Benchmarks' do
+  p Документацията е оскъдна, защото бенчмарковете не са приети като стабилна функционалност все още
+  ul
+    li <a href="https://doc.rust-lang.org/1.12.1/book/benchmark-tests.html">https://doc.rust-lang.org/1.12.1/book/benchmark-tests.html</a>
+    li Сорс кода на <a href="https://github.com/rust-lang/rust/tree/master/src/libtest">libtest</a>
+
+= slide 'Сорс код' do
+  p Сорс кода на проекта се намира в <a href="https://github.com/nikolads/rust-parallel-dfs">github</a>
