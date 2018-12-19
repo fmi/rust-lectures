@@ -824,6 +824,20 @@ mod client {
 
 # Достъп
 
+- ако искаме да използваме нещо извън модула трябва да използваме пълното име
+--
+- пълното име започва с име на crate-а или ключовата дума `crate` ако е дефинирано в нашия проект
+--
+- след това следва пътя до item-а
+--
+- `crate::client::connect`
+--
+- `std::vec::Vec`
+
+---
+
+# Достъп
+
 Ако искаме да използваме нещо извън модула трябва да използваме пълното име
 
 ```rust
@@ -835,7 +849,7 @@ mod client {
 
 mod network {
     fn init() {
-        ::client::connect();
+        crate::client::connect();
     }
 }
 # fn main() {}
@@ -855,7 +869,7 @@ mod client {
 
 mod network {
     fn init() {
-        ::client::connect();
+        crate::client::connect();
     }
 }
 # fn main() {}
@@ -875,7 +889,7 @@ mod client {
 
 mod network {
     fn init() {
-        ::client::connect();
+        crate::client::connect();
     }
 }
 # fn main() {}
@@ -894,7 +908,7 @@ mod client {
 }
 
 mod network {
-    use client::connect;
+    use crate::client::connect;
 
     fn init() {
         connect();
@@ -916,7 +930,7 @@ mod network {
         pub fn connect() { /* ... */ }
     }
 
-    // еквивалентно на use network::client::connect;
+    // еквивалентно на use crate::network::client::connect;
     use self::client::connect;
 
     fn init() {
@@ -925,6 +939,10 @@ mod network {
 }
 # fn main() {}
 ```
+
+--
+
+Също така има и `use super::...` за релативен път, който започва от по-горния модул
 
 ---
 
@@ -1130,7 +1148,7 @@ cargo new number_guessing_game --bin
 [package]
 name = "number_guessing_game"
 version = "0.1.0"
-authors = ["Nikola Stoyanov <ns.barzakov@gmail.com>"]
+authors = ["Nikola Stoyanov <nikolads@uni-sofia.bg>"]
 
 [dependencies]
 ```
@@ -1143,7 +1161,7 @@ authors = ["Nikola Stoyanov <ns.barzakov@gmail.com>"]
 [package]
 name = "number_guessing_game"
 version = "0.1.0"
-authors = ["Nikola Stoyanov <ns.barzakov@gmail.com>"]
+authors = ["Nikola Stoyanov <nikolads@uni-sofia.bg>"]
 
 [dependencies]
 rand = "0.5.5"
@@ -1175,4 +1193,47 @@ extern crate rand;
 
 # Имплементация
 
-Live demo
+### Live demo
+
+---
+
+# Имплементация
+
+### Код от демото
+
+```rust
+# // ignore
+extern crate rand;
+
+use rand::prelude::*;
+use std::io;
+
+fn main() {
+    // Generate a random number between 0 and 10
+    let secret = rand::thread_rng().gen_range(0, 10_u32);
+    let stdin = io::stdin();
+
+    for _ in 0..5 {
+        let mut line = String::new();
+        let _ = stdin.read_line(&mut line);
+
+        // No error handling - panic if parsing fails
+        let guess: u32 =
+            line
+            .trim()
+            .parse()
+            .unwrap();
+
+        if secret < guess {
+            println!("I am less than that");
+        } else if secret > guess {
+            println!("I am greater than that");
+        } else {
+            println!("Congratulations, you won!");
+            break;
+        }
+    }
+
+    println!("The number was {}", secret);
+}
+```

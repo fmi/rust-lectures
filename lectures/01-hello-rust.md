@@ -10,17 +10,6 @@ font-size: 20px
 font-family: Arial, Helvetica, sans-serif
 # code blocks color theme
 code-theme: github
-outputDir: output
----
-
-# Административни неща
-
-- Сайт на курса (може би временен): https://fmi.rust-lang.bg/
---
-- Лекции: https://fmi.rust-lang.bg/lectures
---
-- Discord: https://discord.gg/FCTNfbZ
-
 ---
 
 # Hello, world!
@@ -30,6 +19,7 @@ outputDir: output
 ```rust
 # //norun
 fn main() {
+    let x = 0;
     println!("Hello, world!");
 }
 ```
@@ -57,7 +47,7 @@ Hello, world!
 --
 
 ```sh
-$ cargo new hello
+$ cargo new hello --bin
 $ cargo run
 Hello, world!
 ```
@@ -334,7 +324,7 @@ let x: () = ();
 # // norun
 # #![allow(unused_variables)]
 # fn main() {
-let s: &str = "Rust рулит!!!";
+let s: &str = "Rust рилит!!!";
 # }
 ```
 
@@ -426,21 +416,22 @@ word   isize usize cia  cua
 "cua": "unsigned long / size_t"
 @@end
 
+%%
 | Length | Rust | C/C++  |
 :-------:|:----:|:------:|
 | 32-bit | f32  | float  |
 | 64-bit | f64  | double |
-
-| Rust | C/C++ |
-|:----:|:-----:|
-| bool | bool  |
-|  ()  | void  |
-
+%%
+| Length | Rust | C++   |
+:-------:|:----:|:-----:|
+| 8-bit  | bool | bool  |
+| -      |  ()  | void  |
+%%
 ---
 
 # Специфики
 
-Няма автоматично конвертиране между различни числови типове
+Няма автомачно конвертиране между различни числови типове
 
 ```rust
 # // norun
@@ -642,7 +633,7 @@ fn add(a: u32, b: u32) -> u32 {
 --
 * Задаването на типове на параметрите и резултата е задължително (няма type inference)
 --
-* Върнатата стойност е стойността на последния израз в тялото на функцията
+* Върнатана стойност е стойността на последния израз в тялото на функцията
 --
 * Ако искаме да излезем от функцията преди последния ред, може да използваме `return`
 --
