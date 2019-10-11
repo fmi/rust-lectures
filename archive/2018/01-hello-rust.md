@@ -1,7 +1,7 @@
 ---
 title: Здравей, Rust
 author: Rust@FMI team
-date: 10 октомври 2019
+date: 04 октомври 2018
 lang: bg
 keywords: rust,fmi
 description: Въведение
@@ -19,6 +19,7 @@ code-theme: github
 ```rust
 # //norun
 fn main() {
+    let x = 0;
     println!("Hello, world!");
 }
 ```
@@ -79,7 +80,7 @@ Hello, world!
 
 # The Rust Book
 
-https://doc.rust-lang.org/stable/book/
+https://doc.rust-lang.org/book/2018-edition/
 
 ---
 
@@ -96,36 +97,15 @@ https://play.rust-lang.org/
 `let NAME = VALUE;`
 `let NAME: TYPE = VALUE;`
 
+Типът може се пропусне, ако е ясен от контекста.
+
+
 ```rust
 # //norun
 # #[allow(unused_variables)]
 # fn main() {
 let x = 5;
 let y: i32 = 3;
-# }
-```
-
----
-
-# Променливи
-
-Всяка променлива има тип, но можем да не пишем типа, ако е ясен от контекста
-
-```rust
-# //norun
-# #[allow(unused_variables)]
-# fn main() {
-let x: i32 = 5;
-let y = x;      // типа на `y` е `i32`, защото `x` e `i32`
-# }
-```
-
-```rust
-# //norun
-# #[allow(unused_variables)]
-# fn main() {
-let x = 5;      // типа на `x` е `i32`, защото `y` e `i32`
-let y: i32 = x;
 # }
 ```
 
@@ -142,6 +122,7 @@ let y: i32 = x;
 let x = 10;
 let x = x + 10;
 let x = x * 3;
+// ...
 # }
 ```
 
@@ -158,6 +139,30 @@ let x = x * 3;
 let x1 = 10;
 let x2 = x1 + 10;
 let x3 = x2 * 3;
+// ...
+# }
+```
+
+---
+
+# Променливи
+
+### shadowing
+
+```rust
+# //norun
+# #[allow(unused_variables)]
+# fn main() {
+let x = 10;
+
+{
+    let x = x + 10;
+
+    {
+        let x = x * 3;
+        // ...
+    }
+}
 # }
 ```
 
@@ -202,13 +207,9 @@ x += 1;
 За да се направи mutable се използва ключовата дума `mut`
 
 ```rust
-# // norun
-# #[allow(unused_variables)]
-# #[allow(unused_assignments)]
-# fn main() {
+# // ignore
 let mut x = 5;
 x += 1;
-# }
 ```
 
 ---
@@ -289,14 +290,12 @@ x += 1;
 ### unit
 
 --
-- тип `()`
+- `()`
 --
-- стойност `()`
---
-- тип с една единствена стойност
-- големина 0 байта, не носи информация
-- използва се за функции които не връщат стойност
-- и на други места
+- тип с големина 0 байта (zero sized type)
+- тип без стойност (но не в смисъла на `null`)
+- подобно на `void` в C/C++, но по-полезно
+- използва се при generics
 
 --
 
@@ -432,7 +431,7 @@ word   isize usize cia  cua
 
 # Специфики
 
-Няма автоматично конвертиране между различни числови типове
+Няма автомачно конвертиране между различни числови типове
 
 ```rust
 # // norun
@@ -465,13 +464,12 @@ let y = 1.2_f64 / 0.8_f32;
 За конвертиране между типове се използва ключовата дума `as`
 
 ```rust
+# // norun
 # #[allow(unused_variables)]
 # fn main() {
 let one = true as u8;
 let two_hundred = -56_i8 as u8;
 let three = 3.14 as u32;
-
-println!("one: {}\ntwo_hundred: {}\nthree: {}", one, two_hundred, three);
 # }
 ```
 
@@ -563,8 +561,8 @@ if bool_expression {
 # // norun
 # #![allow(unused_variables)]
 # fn main() {
-# let iterable: &[()] = &[];
-for var in iterable {
+# let iterator: &[()] = &[];
+for var in iterator {
     // ...
 }
 # }
@@ -580,6 +578,9 @@ for var in iterable {
 
 Също така има и `while` и `loop` цикли.
 
+`loop` e същото като `while true`, но по-четимо.
+
+%%
 ```rust
 # //norun
 # fn main() {
@@ -589,9 +590,7 @@ while bool_expression {
 }
 # }
 ```
-
-`loop` e същото като `while true`, но по-четимо.
-
+%%
 ```rust
 # //norun
 # fn main() {
@@ -600,6 +599,45 @@ loop {
 }
 # }
 ```
+%%
+
+---
+
+# Функции
+
+```rust
+fn main() {
+    println!("Hello, world!");
+    another_function();
+}
+
+fn another_function() {
+    println!("Another function.");
+}
+```
+
+---
+
+# Функции
+
+```rust
+# //norun
+# fn main() {}
+# #[allow(dead_code)]
+fn add(a: u32, b: u32) -> u32 {
+    // note no semicolon
+    a + b
+}
+```
+
+--
+* Задаването на типове на параметрите и резултата е задължително (няма type inference)
+--
+* Върнатана стойност е стойността на последния израз в тялото на функцията
+--
+* Ако искаме да излезем от функцията преди последния ред, може да използваме `return`
+--
+* Използване на `return` на последния ред от тялото се счита за лоша практика
 
 ---
 
@@ -608,15 +646,13 @@ loop {
 ### Израз (expression)
 
 --
-* нещо което може да се оцени
+* операция, която връща резултат
 --
 * `1`
 --
 * `(2 + 3) * 4`
 --
 * `add(5, 6)`
---
-* (`add(5, 6);` също е израз, със стойност `()` -- повече за това по-нататък)
 
 ---
 
@@ -625,7 +661,7 @@ loop {
 ### Твърдение (statement)
 
 --
-* казва какво да се направи
+* инструкция, която извършва някакво действие и няма резултат
 --
 * `let x = 10;`
 --
@@ -633,7 +669,7 @@ loop {
 --
 * `fn add(a: i32, b: i32) { a + b }`
 --
-* `израз;`
+* ако добавим `;` след израз го превръщаме в твърдение
 
 ---
 
@@ -645,9 +681,8 @@ loop {
 
 ```rust
 # #![allow(unused_variables)]
-# #![allow(unused_parens)]
 # fn main() {
-let x = (fn add(a: i32, b: i32) { a + b });
+let x = (let y = 10);
 # }
 ```
 
@@ -690,7 +725,7 @@ let bigger = if a > b {
 # }
 ```
 
-По тази причина няма тернарен оператор
+Rust няма тернарен оператор по тази причина
 
 ```rust
 # //norun
@@ -719,79 +754,6 @@ let x = loop {
 
 ---
 
-# Функции
-
-```rust
-fn main() {
-    println!("Hello, world!");
-    another_function();
-}
-
-fn another_function() {
-    println!("Another function.");
-}
-```
-
----
-
-# Функции
-
-```rust
-# //norun
-# fn main() {}
-# #[allow(dead_code)]
-fn add(a: u32, b: u32) -> u32 {
-    // note no semicolon
-    a + b
-}
-```
-
---
-* Задаването на типове на параметрите и резултата е задължително
---
-* Върнатата стойност е стойността на последния израз в тялото на функцията
-
----
-
-# Функции
-
-```rust
-# //norun
-# fn main() {}
-# #[allow(dead_code)]
-fn print_a(a: u32) {
-    println!("{}", a);
-}
-
-fn print_b(b: u32) -> () {
-    println!("{}", b);
-}
-```
-
-* Не е нужно да пишем `-> ()` за функции който не връщат резулат
-
----
-
-# Функции
-
-```rust
-# //norun
-# fn main() {}
-# #[allow(dead_code)]
-fn good_a(a: u32, a_is_bad: bool) -> u32 {
-    if a_is_bad {
-        return 0;
-    }
-
-    a
-}
-```
-
-* Ако искаме да излезем от функцията преди последния ред, може да използваме `return`
-* Използване на `return` на последния ред от тялото се счита за лоша практика
-
----
-
 # Macros
 
 --
@@ -810,7 +772,7 @@ fn good_a(a: u32, a_is_bad: bool) -> u32 {
 ```rust
 # fn main() {
 let x = 5;
-let y = "десет";
+let y = 10;
 println!("x = {} and y = {}", x, y);
 # }
 ```
@@ -819,32 +781,3 @@ println!("x = {} and y = {}", x, y);
 * Принтиране на конзолата
 --
 * `{}` placeholders
-
----
-
-# println! macro
-
-```rust
-# fn main() {
-let x = 5;
-let y = "десет";
-println!("x = {:?} and y = {:?}", x, y);
-# }
-```
-
-* Принтиране на конзолата
-* `{:?}` placeholders
-
----
-
-# dbg! macro
-
-```rust
-# fn main() {
-let x = 5;
-let y = "десет";
-
-dbg!(x);
-dbg!(y);
-# }
-```
