@@ -324,7 +324,7 @@ let x: () = ();
 # // norun
 # #![allow(unused_variables)]
 # fn main() {
-let s: &str = "Rust рилит!!!";
+let s: &str = "Нещо друго";
 # }
 ```
 
