@@ -1,7 +1,7 @@
 ---
 title: Unsafe Rust and FFI
 author: Rust@FMI team
-date: 6 януари 2021
+date: 12 декември 2019
 speaker: Делян Добрев
 lang: bg
 keywords: rust,fmi
@@ -22,10 +22,30 @@ code-theme: github
 Силната страна на Rust са статичните гаранции за поведението на програмата.
 --
 <br>
-Но тези проверки са консервативни и съществуват програми, които са 'safe', но компилаторът не може да ги верифицира. За да може да пишем такива програми се налага да кажем на компилатора да смекчи ограниченията си.
+Но тези проверки са консервативни и съществуват програми, които са 'safe', но компилатора не може да ги верифицира. За да може да пишем такива програми се налага да кажем на компилатора да смекчи ограниченията си.
 --
 <br>
 За тази цел в Rust има ключовата дума `unsafe`, която премахва някои ограничения на компилатора.
+
+---
+
+# Unsafe Rust
+
+Съществуват 4 контекста в които може да използваме `unsafe`.
+
+---
+
+# Unsafe Rust
+
+Всички функции които използваме през FFI трябва да се маркират като `unsafe`.
+Спокойно, ще видим какво точно е FFI по-късно в лекцията.
+
+```rust
+# // ignore
+unsafe fn danger_will_robinson() {
+    // Scary stuff...
+}
+```
 
 ---
 
@@ -141,13 +161,15 @@ unsafe impl Scary for i32 { ... }
 
 # Unsafe Rust
 
-Чрез `unsafe`, Rust ни предоставя точно 5 неща които не можем да правим при нормални обстоятелства:
+Чрез `unsafe`, Rust ни предоставя 5 неща които не можем да правим при нормални обстоятелства:
 
 1. Четене и писане в static mutable променливи.
 2. Дереференциране на голи указатели.
 3. Извикване на `unsafe` функции.
 4. Имплементиране на `unsafe` типажи.
 5. Достъп до полетата на `union`.
+
+Това е всичко.
 
 --
 <br>
@@ -172,19 +194,6 @@ union U {
 
 # Unsafe Rust
 
-Всички функции които използваме чрез FFI трябва да се маркират като `unsafe`.
-
-```rust
-# // ignore
-unsafe fn danger_will_robinson() {
-    // Scary stuff...
-}
-```
-
----
-
-# Unsafe Rust
-
 ### FFI
 
 Какво означава FFI?
@@ -202,7 +211,7 @@ Foreign Function Interface
 --
 <br>
 За извикване на функции, които не са написани в нашият код.
-Това са най-често функции в библиотеки (`.lib/.а`, `.dll/.so` и т.н.), върху които нямаме контрол.
+Това са най-често функции в библиотеки (dll, lib и т.н.), върху които нямаме контрол.
 
 ---
 
@@ -403,7 +412,7 @@ extern {
 --
 * `#[link(name="math", kind="static")]` - линква към статичната библиотека `math`
 --
-* `#[link(name="math", kind="framework")]` - линква към MacOS framework `math`
+* `#[link(name="math", kind="framework")]` - линква към MacOs framework `math`
 
 ---
 
@@ -661,38 +670,10 @@ extern fn call_me_from_c() {
 
 # Други неща
 
-### Variadic functions
-
-```rust
-# // ignore
-#![feature(c_variadic)]
-
-pub unsafe extern "C" fn add(n: usize, mut args: ...) -> usize {
-    let mut sum = 0;
-    for _ in 0..n {
-        sum += args.arg::<usize>();
-    }
-    sum
-}
-```
-
-### Importing global variables
-
-%%
-```c
-extern void* magic;
-```
-%%
-```rust
-# // ignore
-use std::os::raw::c_void;
-
-extern {
-    #[no_mangle]
-    static magic: *const c_void;
-}
-```
-%%
+--
+* [Variadic functions](https://doc.rust-lang.org/book/first-edition/ffi.html#variadic-functions)
+--
+* [Importing global variables](https://doc.rust-lang.org/book/first-edition/ffi.html#accessing-foreign-globals)
 
 ---
 
@@ -718,6 +699,8 @@ pub fn array_sum(arr: &[c_int]) -> c_int {
 ---
 
 # Writing wrappers
+
+Други
 
 --
 * Конвертиране на кодове за грешки до `Option` или `Result`
@@ -856,7 +839,7 @@ unsafe {
 
 ### CString
 
-Какъв е проблемът?
+Какъв е проблема?
 
 ```rust
 # //norun
@@ -1031,8 +1014,6 @@ crate-type = ["..."]
 
 # bindgen crate
 
-Автоматично генериране на bindings
-
 [Bindgen](https://github.com/rust-lang-nursery/rust-bindgen)
 
 ---
@@ -1040,7 +1021,7 @@ crate-type = ["..."]
 # Ресурси
 
 --
-* [Rustonomicon](https://doc.rust-lang.org/nomicon/index.html)
+* [The Rust Book, First Edition](https://doc.rust-lang.org/book/first-edition/ffi.html)
 --
 * [Cargo Manifest](http://doc.crates.io/manifest.html)
 --

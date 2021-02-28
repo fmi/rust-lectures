@@ -1,8 +1,7 @@
 ---
 title: Здравей, Rust
 author: Rust@FMI team
-speaker: Андрей Радев
-date: 7 октомври 2020
+date: 10 октомври 2019
 lang: bg
 keywords: rust,fmi
 description: Въведение
@@ -47,7 +46,7 @@ Hello, world!
 --
 
 ```sh
-$ cargo new hello
+$ cargo new hello --bin
 $ cargo run
 Hello, world!
 ```
@@ -218,10 +217,12 @@ x += 1;
 
 ### Целочислени типове
 
+--
 - `i8`, `i16`, `i32`, `i64`, `i128`, `isize`
 - `u8`, `u16`, `u32`, `u64`, `u128`, `usize`
 --
 - `iN` - цяло (signed) число с размер N бита
+--
 - `uN` - неотрицателно (unsigned) число с размер N бита
 --
 - `isize` и `usize` имат размер колкото машинната дума - 32 бита на 32 битов ОС и 64 бита на 64 битов ОС
@@ -234,9 +235,11 @@ x += 1;
 
 --
 * Цяло число: `42`
+--
 * Специфичен тип: `42u32`
 --
 * Големи числа: `133_587`
+--
 * `42_u32`
 --
 * `1_0_0_0`
@@ -249,8 +252,11 @@ x += 1;
 
 ### Целочислени типове (в различни бройни системи)
 
+--
 * Hex: `0xDEADBEEF`
+--
 * Octal: `0o77`
+--
 * Binary: `0b1010011010`
 
 ---
@@ -259,11 +265,11 @@ x += 1;
 
 ### Числа с плаваща запетая
 
+--
 - `f32`
 - `f64`
+--
 - съответно 32 битов и 64 битов float
-- `3.14`
-- `1.3_f64`
 
 ---
 
@@ -271,7 +277,9 @@ x += 1;
 
 ### bool
 
+--
 - `bool`
+--
 - стойности `true` и `false`
 
 ---
@@ -280,7 +288,9 @@ x += 1;
 
 ### unit
 
+--
 - тип `()`
+--
 - стойност `()`
 --
 - тип с една единствена стойност
@@ -304,38 +314,18 @@ let x: () = ();
 
 ### Низове
 
+--
 - `str`
 --
 - utf8 низ
 - ще му обърнем повече внимание в бъдеща лекция.
 
 --
-
-```rust
-# // norun
-# #![allow(unused_variables)]
-# fn main() {
-let s = "Нещо друго";
-# }
-```
-
---
-
 ```rust
 # // norun
 # #![allow(unused_variables)]
 # fn main() {
 let s: &str = "Нещо друго";
-# }
-```
-
---
-
-```rust
-# // norun
-# #![allow(unused_variables)]
-# fn main() {
-let s: &'static str = "Нещо друго";
 # }
 ```
 
@@ -345,6 +335,7 @@ let s: &'static str = "Нещо друго";
 
 ### Символи
 
+--
 - `char`
 --
 - unicode code point
@@ -353,14 +344,10 @@ let s: &'static str = "Нещо друго";
 
 --
 ```rust
+# // norun
+# #![allow(unused_variables)]
 # fn main() {
-let heart1: char = '❤';
-let heart2: char = '\u{2764}';
-let heart3: &str = "❤";
-
-println!("{:?}", heart1);
-println!("{:?}", heart2);
-println!("{:?}", heart3);
+let love: char = '❤';
 # }
 ```
 
@@ -394,14 +381,11 @@ let nested: [[i32; 3]; 2] = [
 - `(A, B, C, ...)`
 
 ```rust
+# // norun
 # #![allow(unused_variables)]
 # fn main() {
 let tuple: (i32, u32, bool) = (1, 2, false);
 let unit: () = ();
-
-println!("{}", tuple.0);
-println!("{}", tuple.1);
-println!("{}", tuple.2);
 # }
 ```
 
@@ -470,19 +454,6 @@ let y: u64 = x;
 # #![allow(unused_variables)]
 # fn main() {
 let x = 4_u32 - 1_u8;
-# }
-```
-
----
-
-# Специфики
-
-Аритметични операции не могат да се прилагат върху различни типове
-
-```rust
-# // norun
-# #![allow(unused_variables)]
-# fn main() {
 let y = 1.2_f64 / 0.8_f32;
 # }
 ```
@@ -684,7 +655,7 @@ let x = (fn add(a: i32, b: i32) { a + b });
 
 # Statements & Expressions
 
-Много от конструкциите на езика са изрази.
+Много от констукциите на езика са изрази.
 
 Блоковете са израз - стойността им е стойността на последния израз в блока
 
@@ -823,12 +794,14 @@ fn good_a(a: u32, a_is_bad: bool) -> u32 {
 
 # Macros
 
+--
 * служат за генериране на код
+--
 * различават се от функциите по `!` след името
 --
 * `println!`
+--
 * `print!`
-* `dbg!`
 
 ---
 
@@ -875,15 +848,3 @@ dbg!(x);
 dbg!(y);
 # }
 ```
-
----
-
-# Административни неща
-
-- Инсталирайте си Rust: https://2017.fmi.rust-lang.bg/topics/1
---
-- Елате в Discord канала: https://discord.gg/r9Wcazk
---
-- От другия път -- с парола! Вижте си секция "Табло" в сайта
---
-- Първо предизвикателство (не много предизвикателно): https://fmi.rust-lang.bg/challenges/1

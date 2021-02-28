@@ -2,7 +2,7 @@
 title: GUI-та с GTK
 author: Rust@FMI team
 speaker: Андрей Радев
-date: 11 януари 2021
+date: 17 декември 2019
 lang: bg
 keywords: rust,fmi
 slide-width: 80%
@@ -13,8 +13,12 @@ code-theme: github
 
 # Административни неща
 
-* Домашно 3: приключи ([пълен тест](https://github.com/AndrewRadev/rust-secrets/blob/a38fa40ae570b954e4ad7d92766da4063f99e2e6/tasks/csv_filter/tests/test_full.rs))
-* Мислете за проекти (https://fmi.rust-lang.bg/guides/projects)
+--
+* Първо предизвикателство приключи
+--
+* Четвъртък няма да имаме лекция
+--
+* Мислете за проекти
 
 ---
 
@@ -39,11 +43,11 @@ https://gtk-rs.org/
 
 ### Ext-traits
 
-Типа [`gtk::MessageDialog`](https://docs.rs/gtk/0.9.2/gtk/struct.MessageDialog.html) има само и единствено една асоциирана функция `new`. (Други типове могат да имат и други асоциирани методи, но предимно само за конструиране).
+Типа `gtk::MessageDialog` има само и единствено една асоциирана функция `new`. (Други типове могат да имат и други асоциирани методи, но предимно само за конструиране).
 
-Оттам нататък, всички собствени методи на този "клас" се намират в trait-а [`MessageDialogExt`](https://docs.rs/gtk/0.9.2/gtk/trait.MessageDialogExt.html).
+Оттам нататък, всички собствени методи на този "клас" се намират в trait-а `MessageDialogExt`.
 
-Всички наследени методи се намират в trait-овете: `DialogExt`, `GtkWindowExt`, `BinExt`, `ContainerExt`, `WidgetExt`, `glib::object::ObjectExt`, `BuildableExt`. Това са всички типове, за които имаме `IsA` имплементация за `MessageDialog`.
+Всички наследени методи се намират в trait-овете: `DialogExt`, `GtkWindowExt`, `BinExt`, `ContainerExt`, `WidgetExt`, `glib::object::ObjectExt`, `BuildableExt`.
 
 Това работи, когато повечето код е автоматично-генерирани binding-и, но би било доста тегаво да се поддържа ръчно.
 
@@ -53,7 +57,7 @@ https://gtk-rs.org/
 
 ### `IsA<T>`
 
-(Вижте и https://gtk-rs.org/docs-src/tutorial/object_oriented)
+(Вижте и https://gtk-rs.org/tuto/upcast_downcast)
 
 Примерно, имаме
 
@@ -81,11 +85,11 @@ Native rust-ки аналог (kind of): [Any](https://doc.rust-lang.org/std/any
 
 # Инсталация
 
-Външните библиотеки вероятно ще са най-досадната част, особено под Windows: https://www.gtk.org/docs/installations/
+Външните библиотеки вероятно ще са най-досадната част, особено под Windows: https://gtk-rs.org/docs-src/requirements.html
 
 ```toml
 [dependencies]
-gtk = { version = "0.9", features = ["v3_16"] }
+gtk = { version = "0.8", features = ["v3_16"] }
 ```
 
 В main файла:
@@ -100,33 +104,13 @@ use gio::prelude::*;
 
 ---
 
-# Версии
-
-Ако намерите tutorial online, който не се компилира, добра идея е да пробвате да пуснете `cargo update` -- това ще опита да инсталира по-нови версии на пакетите, които продължават да са съвместими с изискванията.
-
-Примерно, проекта може да е фиксирал libc версия "0.2.33", но пакетите просто да търсят версия "0.2.x". Един `cargo update` може да вдигне до версия "0.2.82", която е API-compatible, но просто оправя някакви вътрешни проблеми.
-
----
-
-# Размери на пакетите
-
-Досадно големи. Моя "quickmd" пакет има 3.7GB "target" директория. Проекти, които сте пробвали да компилирате веднъж и сте ги изоставили, може да ги зачистите с `cargo clean`.
-
----
-
 # Demo
 
 ### Markdown previewer
 
 Обяснение: https://mmstick.github.io/gtkrs-tutorials/chapter_04/index.html
 
-Малко остарял проект вече, за нещастие. Ползвайте моя форк за кода: https://github.com/AndrewRadev/gtkrs-tutorials/tree/7f51f0f37a20fb0b4ab6217e90a17dc132cf8c71/demos/chapter_04
-
-Промени от оригинала:
-
-* `cargo update` за оправяне на счупени зависимости
-* Update на gtk (и свързани библиотеки) до 0.9.2
-* edition = "2018"
+Код: https://github.com/mmstick/gtkrs-tutorials/tree/47e1e54667fafd941ac623c8007e60d07738763a/demos/chapter_04
 
 ---
 
@@ -166,7 +150,7 @@ Source: https://github.com/sdroege/rustfest-rome18-gtk-gst-workshop
 ### Интересни неща
 
 --
-* Reference-counting: `App`, `AppInner`, `AppWeak` (вместо това може да ползвате [`clone!`](https://gtk-rs.org/docs/glib/macro.clone.html) макросa, но е полезно да го разгледате, за да разберете как да използвате въпросния макрос)
+* Reference-counting: `App`, `AppInner`, `AppWeak` (вероятно няма да ви е полезно с новия `clone!` макрос, но е полезно да го разгледате, за да разберете как да използвате въпросния макрос)
 --
 * Конвертиране на всичко от и до наши типове с `From`: `SnapshotState`, `RecordState`
 --
@@ -285,24 +269,28 @@ fn main() {
 
 ---
 
-# GTK4
+# Версия 0.8.0 на GTK-rs
 
-Още не виждам много документация по въпроса, но го има: https://github.com/gtk-rs/gtk4-rs
+https://gtk-rs.org/blog/2019/12/15/new-release.html
+
+Някои нови неща:
+
+--
+* Макрос за клониране, често срещан механизъм за споделяне на widget-и, но трябва да се внимава дали използвате силни или слаби references ("трябва" == "иначе ще имате memory leaks", което може да не е твърде голяма драма в зависимост какво правите)
+--
+* Възможност за правене на ваши "subclass"-ове на widget-и... макар че изглежда по-сложно, отколкото си заслужава :)
+--
+* Async/await поддръжка -- това означава че I/O нещата в `gio` пакета (които GTK си използва вместо native rust-ките) могат на теория да са съвместими с rust-ките futures. На практика, вероятно иска известно количество работа.
 
 ---
 
 # Други интересни ресурси
 
-* Добра лекция, която прави един UI с GTK и също с терминален интерфейс: https://www.youtube.com/watch?v=dK9-oXptFcM
---
-* [fltk](https://github.com/MoAlyousef/fltk-rs): Малко по-дървен интерфейс, но популярен за базови неща.
 --
 * [relm](https://github.com/antoyo/relm): Библиотека, която седи отгоре на GTK и предоставя elm-подобен интерфейс.
-* [vgtk](https://github.com/bodil/vgtk): Също седи отгоре на GTK, прави интересни неща с макроси.
 --
-* [conrod](https://github.com/PistonDevelopers/conrod/): Immediate-mode GUI, което e доста различно откъм widget-и. Target-а му е UI за игри.
+* [conrod](https://github.com/PistonDevelopers/conrod/): Immediate-mode GUI, което e доста различно откъм widget-и.
 --
 * [tauri](https://github.com/tauri-apps/tauri): Hot new stuff, използва webview, като electron, но с доста по-малък overhead (твърдят).
 --
 * И всичко друго в секция "GUI" в ["awesome-rust"](https://github.com/rust-unofficial/awesome-rust#gui).
-* Също, ["Are we GUI Yet?"](https://areweguiyet.com/)

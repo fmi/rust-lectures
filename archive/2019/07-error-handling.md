@@ -2,7 +2,7 @@
 title: Справяне с грешки
 author: Rust@FMI team
 speaker: Андрей Радев
-date: 28 октомври 2020
+date: 25 октомври 2018
 lang: bg
 keywords: rust,fmi
 # description:
@@ -16,22 +16,11 @@ code-theme: github
 # Административни неща
 
 --
-* Първо домашно приключи, на печелившите честито
-
----
-
-# За домашното
-
+* Първо домашно тече, пускайте го рано!
 --
-* Най-честия проблем: "FizzBuzz" вместо "Fizzbuzz"
+* Въпроси по условието -- тук или в discord
 --
-* Друг чест проблем: Липса на паника за 0 и/или 1
---
-* Cast-ване до `u8`, или как да си избираме типове
---
-* Технически погледнато, `change_label` няма нужда от `panic!` (Type systems, woo!)
---
-* Ще оглеждаме домашните идващите дни
+* Пишете си тестове
 
 ---
 
@@ -43,8 +32,6 @@ code-theme: github
 * Traits (като интерфейси, необходими за практическа употреба на generics)
 --
 * Асоциирани типове в trait-ове
---
-* (Offtopic разговори за тестване)
 
 ---
 
@@ -246,21 +233,6 @@ where
 let e = energy_to_heat_water(room_temperature(), Celsius(100.0), 1.0);
 # }
 ```
----
-
-# Конвертиране
-
-### Into<T>
-
-* Супер удобно
---
-* Но, може да затрудни малко разбирането на кода ("твърде много магия")
---
-* Използвайте го! Просто не прекалявайте :)
---
-* (Или прекалете един-два пъти, за да го усетите :))
---
-* Ще го срещате тук и там
 
 ---
 
@@ -713,14 +685,6 @@ macro_rules! try {
 # Error handling
 
 ```rust
-# macro_rules! try {
-#     ($expr:expr) => {
-#         match $expr {
-#             Ok(result) => result,
-#             Err(e) => return Err(e),
-#         }
-#     }
-# }
 # use std::fs::File;
 # use std::io::{self, Read};
 fn main() {
@@ -869,14 +833,6 @@ fn main() {
 ### Въпрос
 
 ```rust
-# macro_rules! try {
-#     ($expr:expr) => {
-#         match $expr {
-#             Ok(result) => result,
-#             Err(e) => return Err(e),
-#         }
-#     }
-# }
 # fn all_your_quotes_are_belong_to_us() -> Result<(), String> {
 #   println!("Bla-bla failure success");
 #   Ok(())
@@ -893,14 +849,6 @@ fn main() {
 ### Въпрос
 
 ```rust
-# macro_rules! try {
-#     ($expr:expr) => {
-#         match $expr {
-#             Ok(result) => result,
-#             Err(e) => return Err(e),
-#         }
-#     }
-# }
 # fn all_your_quotes_are_belong_to_us() -> Result<(), String> {
 #   println!("Bla-bla failure success");
 #   Ok(())
@@ -919,14 +867,6 @@ fn main() -> Result<(), String> {
 ### Въпрос
 
 ```rust
-# macro_rules! try {
-#     ($expr:expr) => {
-#         match $expr {
-#             Ok(result) => result,
-#             Err(e) => return Err(e),
-#         }
-#     }
-# }
 # fn all_your_quotes_are_belong_to_us() -> Result<(), String> {
 #   println!("Bla-bla failure success");
 #   Ok(())
@@ -941,21 +881,13 @@ fn main() -> Result<(), String> {
 
 # Error handling
 
-А ако не са всичките грешки `io::Error`?
+А ако не са всичките грешки io::Error?
 
 ---
 
 # Error handling
 
 ```rust
-# macro_rules! try {
-#     ($expr:expr) => {
-#         match $expr {
-#             Ok(result) => result,
-#             Err(e) => return Err(e),
-#         }
-#     }
-# }
 # use std::fs::File;
 # use std::io::{self, Read};
 fn all_your_numbers_are_belong_to_us() -> Result<i32, io::Error> {
@@ -1044,17 +976,6 @@ fn all_your_numbers_are_belong_to_us() -> Result<i32, FancyError> {
 }
 # }
 ```
-
----
-
-# Error handling
-
-* Statement-а `return Err(e.into());` изглежда *по един и същ начин* какъвто и да е конкретния return тип.
---
-* `let x: T = "foo".parse();`
-* `let y: U = "foo".parse();`
---
-* И затова `try!` е глобално използваем и в един момент просто влезе в стандартната библиотека
 
 ---
 
@@ -1217,12 +1138,16 @@ let number = "foo".parse::<i32>().unwrap_or_else(|e| {
 
 --
 * работи на ниво нишки
+--
 * терминира нишката в която е извикана и изписва съобщение за грешка
+--
 * unwind-ва стека (по подразбиране, може да се променя при компилация)
+--
 * при паника в главната нишка се прекратява цялата програма
 
 --
 * паниките не могат да бъдат хванати (няма catch)
+--
 * (освен ако много, много не искаме, но това е за специални случаи)
 
 ---
@@ -1237,12 +1162,7 @@ let number = "foo".parse::<i32>().unwrap_or_else(|e| {
 --
 * които **не зависят** от user input
 * и няма смисъл да се опитаме да се възстановим от тях
---
-* `"-13".parse::<u32>().unwrap()`
---
-* `io::stdin().parse::<u32>()` -> любезно съобщение "please try again, but better"
---
-* `while let Err(_) = io::stdin().parse::<u32>() { ... }`
+
 --
 * тестове
 * примери
@@ -1260,7 +1180,7 @@ let number = "foo".parse::<i32>().unwrap_or_else(|e| {
 --
 * такива от които не можем да се възстановим - `panic!`
 --
-* `unreachable!()`, `todo!()` са от втория тип
+* `unreachable!()`, `unimplemented!()` са от втория тип
 --
 * няма exceptions!
 
@@ -1271,4 +1191,280 @@ let number = "foo".parse::<i32>().unwrap_or_else(|e| {
 - Failure: https://github.com/rust-lang-nursery/failure
 - Fehler: https://github.com/withoutboats/fehler
 - Thiserror: https://github.com/dtolnay/thiserror
-- Anyhow: https://github.com/dtolnay/anyhow
+
+---
+
+# Read & Write
+
+Има стандартни типажи, които ни помагат за четене и писане
+
+---
+
+# Read & Write
+
+### `std::io::Read`
+
+Един от тях е <code>Read</code>
+
+```rust
+# //ignore
+# fn main() {
+pub trait Read {
+    // Required:
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize>;
+
+    // Provided:
+    fn read_to_end(&mut self, buf: &mut Vec<u8>) -> io::Result<usize> { ... }
+    fn read_to_string(&mut self, buf: &mut String) -> io::Result<usize> { ... }
+    fn read_exact(&mut self, buf: &mut [u8]) -> io::Result<()> { ... }
+    fn by_ref(&mut self) -> &mut Self where Self: Sized { ... }
+    fn bytes(self) -> Bytes<Self> where Self: Sized { ... }
+    fn chain<R: Read>(self, next: R) -> Chain<Self, R> where Self: Sized { ... }
+    fn take(self, limit: u64) -> Take<Self> where Self: Sized { ... }
+
+    // +nightly:
+    unsafe fn initializer(&self) -> Initializer { ... }
+}
+# }
+```
+
+---
+
+# Read & Write
+
+### Бележка:
+
+В модула `std::io` има следната дефиниция:
+
+```rust
+# //ignore
+type Result<T> = Result<T, Error>;
+```
+
+Този синтаксис дефинира type alias ("тип-синоним"). Типа `std::io::Result<T>` е еквивалентен на `Result<T, std::io::Error>`.
+
+Това се използва за улеснение, и спокойно може да use-нем `std::io` и да адресираме `io::Result<usize>` без да указваме типа за грешка -- той вече е конкретизиран в alias-а.
+
+---
+
+# Read
+
+Имплементира се за някои очаквани структури
+
+```rust
+# //ignore
+# fn main() {
+impl Read for File
+impl Read for Stdin
+impl Read for TcpStream
+# }
+```
+
+---
+
+# Read
+
+Видяхме как може да четем от файл, а сега и от Stdin
+
+```rust
+# //ignore
+# fn main() {
+use std::io::{self, Read};
+
+let mut buffer = String::new();
+io::stdin().read_to_string(&mut buffer)?;
+# }
+```
+
+---
+
+# Read & Write
+
+### `std::io::Write`
+
+За писане се използва <code>Write</code>
+
+```rust
+# //ignore
+# fn main() {
+pub trait Write {
+    // Required:
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize>;
+    fn flush(&mut self) -> io::Result<()>;
+
+    // Provided:
+    fn write_all(&mut self, buf: &[u8]) -> io::Result<()> { ... }
+    fn write_fmt(&mut self, fmt: Arguments) -> io::Result<()> { ... }
+    fn by_ref(&mut self) -> &mut Self where Self: Sized { ... }
+}
+# }
+```
+
+---
+
+# Write
+
+Както <code>Read</code> се имплементира за очаквани структури
+
+```rust
+# //ignore
+# fn main() {
+impl Write for File
+impl Write for Stdout
+impl Write for Stderr
+impl Write for TcpStream
+impl Write for Vec<u8>
+# }
+```
+
+---
+
+# Write
+
+```rust
+# //ignore
+# fn main() {
+use std::fs::File;
+use std::io::Write;
+
+let mut f = File::create("foo.txt")?;
+f.write_all(b"Hello, world!")?;
+# }
+```
+
+---
+
+# Read & Write
+
+Като цяло са интуитивни, но не винаги ефективни когато правим много, но малки операции
+
+---
+
+# BufReader & BufWriter
+
+--
+* Затова са създадени <code>BufReader</code> и <code>BufWriter</code>
+--
+* Използват се да буферират операциите, както се досещате от имената им
+
+---
+
+# BufReader & BufWriter
+
+### `std::io::BufReader`
+
+<code>BufReader</code> е wrapper за структури, които имплементират <code>Read</code>
+
+```rust
+use std::io::prelude::*;
+use std::io::BufReader;
+use std::fs::File;
+
+fn main() -> Result<(), std::io::Error> {
+# std::fs::write("log.txt", b"Some stuff").unwrap();
+    let f = File::open("log.txt")?;
+    let mut reader = BufReader::new(f);
+
+    let mut line = String::new();
+    let len = reader.read_line(&mut line)?;
+    println!("First line is {} bytes long", len);
+    Ok(())
+}
+```
+
+---
+
+# BufReader & BufWriter
+
+### std::io::BufRead
+
+Тук се появява нов метод <code>read_line</code>:
+
+```rust
+# //ignore
+# fn main() {
+pub trait BufRead: Read {
+    // Required:
+    fn fill_buf(&mut self) -> io::Result<&[u8]>;
+    fn consume(&mut self, amt: usize);
+
+    // Provided:
+    fn read_until(&mut self, byte: u8, buf: &mut Vec<u8>) -> io::Result<usize> { ... }
+    fn read_line(&mut self, buf: &mut String) -> io::Result<usize> { ... }
+    fn split(self, byte: u8) -> Split<Self> where Self: Sized { ... }
+    fn lines(self) -> Lines<Self> where Self: Sized { ... }
+}
+# }
+```
+
+---
+
+# BufReader & BufWriter
+
+### BufWriter
+
+Подобно, <code>BufWriter</code> е wrapper за структури, които имплементират <code>Write</code>
+
+```rust
+# //ignore
+# fn main() {
+use std::io::prelude::*;
+use std::io::BufWriter;
+use std::net::TcpStream;
+
+let mut stream = BufWriter::new(TcpStream::connect("127.0.0.1:34254").unwrap());
+
+for i in 1..10 {
+    stream.write(&[i]).unwrap();
+}
+# }
+```
+
+В този пример чрез <code>BufWriter</code> превръщаме 10 system calls в 1
+
+---
+
+# BufReader & BufWriter
+
+### BufWrite
+
+Сори, няма <code>BufWrite</code> :(
+
+---
+
+# BufReader & BufWriter
+
+* `Read`: Trait, който е имплементиран от файлове, сокети, и т.н., за четене на брой байтове.
+* `BufReader`: Структура, която обвива нещо, което е `Read`, която **също e** `Read` и която имплементира `BufRead`.
+* `BufRead`: Trait за структури като `BufReader`, които четат, буферирайки.
+--
+<hr>
+* `Write`: Trait, който е имплементиран от файлове, сокети, и т.н., за писане на брой байтове.
+* `BufWriter`: Структура, която обвива нещо, което е `Write`, която **също e** `Write` и която позволява буферирано писане
+* `BufWrite`: Не съществува :/.
+
+---
+
+# Read & Write
+
+<code>Write</code> може да се използва и за тестване чрез <code>mock</code>
+
+```rust
+# //ignore
+# fn main() {
+fn write_u8<W>(writer: &mut W, data: u8) -> io::Result<usize>
+where W: Write {
+    // Do cool stuff with `writer`
+}
+
+#[test]
+fn test_write_u8() {
+    let mut mock: Vec<u8> = Vec::new();
+
+    write_u8(&mut mock, 42).unwrap();
+
+    assert_eq!(mock.len(), 1);
+    assert_eq!(mock[0], 42);
+}
+# }
+```

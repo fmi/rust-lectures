@@ -1,8 +1,7 @@
 ---
 title: Структури, модули, външни пакети
 author: Rust@FMI team
-speaker: Никола
-date: 14 октомври 2020
+date: 17 октомври 2019
 lang: bg
 keywords: rust,fmi
 # description:
@@ -13,18 +12,29 @@ font-family: Arial, Helvetica, sans-serif
 code-theme: github
 ---
 
+# Административни неща
+
+--
+- Инсталирайте си Rust: https://2017.fmi.rust-lang.bg/topics/1
+--
+- Елате в Discord канала: https://discord.gg/FCTNfbZ
+--
+- Регистрирайте се в https://fmi.rust-lang.bg!
+
+---
+
 # Преговор
 
 --
-- Присвояване и местене; Clone и Copy
+- Присвояване и местене
 --
-- Собственост (ownership) и заемане (borrowing)
+- Clone и Copy
+--
+- Собственост
 --
 - Референции
---
     - референцията винаги сочи към валидна стойност
---
-    - или произволен брой `&T`, или точно една `&mut T`
+    - една mutable референция XOR произволен брой immutable референции
 --
 - Низове (`String`) и резени от низове (`&str`)
 --
@@ -32,17 +42,15 @@ code-theme: github
 
 ---
 
-# Административни неща
-
-- Предизвикателство 1 свърши
-
----
-
 # Съдържание
 
+--
 - Структури
+--
 - Методи
+--
 - Модули
+--
 - Използване на пакети от crates.io
 
 ---
@@ -58,6 +66,7 @@ code-theme: github
 ### Синтаксис
 
 ```rust
+# #![allow(dead_code)]
 struct User {
     username: String,
     email: String,
@@ -73,13 +82,14 @@ struct User {
 ### Създаване на инстанция
 
 ```rust
+# #![allow(unused_variables)]
+# #![allow(dead_code)]
+# struct User {
+#     username: String,
+#     email: String,
+#     sign_in_count: u64,
+# }
 # fn main() {
-struct User {
-    username: String,
-    email: String,
-    sign_in_count: u64
-}
-
 let user = User {
     username: String::from("Иванчо"),
     email: String::from("ivan40@abv.bg"),
@@ -95,13 +105,10 @@ let user = User {
 ### Достъп до полета
 
 ```rust
+# #![allow(unused_variables)]
+# #![allow(dead_code)]
+# struct User { username: String, email: String, sign_in_count: u64 }
 # fn main() {
-struct User {
-    username: String,
-    email: String,
-    sign_in_count: u64
-}
-
 let user = User {
     username: String::from("Иванчо"),
     email: String::from("ivan40@abv.bg"),
@@ -118,17 +125,13 @@ println!("{}, {}", user.username, user.email);
 
 ### Достъп до полета
 
-Полетата се достъпват по същия начин и през референция.
-Автоматично се правят необходимия брой дереференцирания.
+Полетата се достъпват по същия начин и през референция
 
 ```rust
+# #![allow(unused_variables)]
+# #![allow(dead_code)]
+# struct User { username: String, email: String, sign_in_count: u64 }
 # fn main() {
-struct User {
-    username: String,
-    email: String,
-    sign_in_count: u64
-}
-
 let user = User {
     username: String::from("Иванчо"),
     email: String::from("ivan40@abv.bg"),
@@ -141,33 +144,7 @@ println!("{}, {}", user_ref.username, user_ref.email);
 # }
 ```
 
----
-
-# Структури
-
-### Промяна на полетата
-
-Можем да променяме стойността на полетата, ако обекта е дефиниран като `mut`.
-
-```rust
-# fn main() {
-struct User {
-    username: String,
-    email: String,
-    sign_in_count: u64
-}
-
-let mut user = User {
-    username: String::from("Иванчо"),
-    email: String::from("ivan40@abv.bg"),
-    sign_in_count: 10,
-};
-
-user.email = "ivan40.ivanov@abv.bg".to_string();
-
-println!("{}, {}", user.username, user.email);
-# }
-```
+Компилаторът автоматично добавя `*`, докато крайния тип не съдържа желаното поле или ще хвърли грешка при компилация, ако няма такъв тип
 
 ---
 
@@ -175,9 +152,9 @@ println!("{}, {}", user.username, user.email);
 
 ### Struct update syntax
 
-Можем да дадем стойност само на част от полетата и останалите да попълним от друга инстанция
-
 ```rust
+# #![allow(unused_variables)]
+# #![allow(dead_code)]
 # struct User { username: String, email: String, sign_in_count: u64 }
 # fn main() {
 let user = User {
@@ -194,77 +171,6 @@ let hacker = User {
 println!("{}, {}", hacker.username, hacker.email);
 # }
 ```
----
-
-# Структури
-
-### Struct update syntax
-
-Това ще премести полетата от оригиналната инстанция
-
-```rust
-# struct User { username: String, email: String, sign_in_count: u64 }
-# fn main() {
-let user = User {
-    username: String::from("Иванчо"),
-    email: String::from("ivan40@abv.bg"),
-    sign_in_count: 10,
-};
-
-let hacker = User {
-    email: String::from("hackerman@l33t.hax"),
-    ..user
-};
-
-println!("{}, {}", hacker.username, hacker.email);
-println!("{}, {}", user.username, user.email);
-# }
-```
-
----
-
-# Структури
-
-### Кратък синтаксис за създаване на структури
-
-Има кратък синтаксис ако стойността на поле се задава чрез променлива със същото име
-
-%%
-```rust
-struct Rectangle {
-    width: f64,
-    height: f64,
-}
-
-# fn main() {
-let width = 2.0;
-let height = 3.0;
-
-let rect = Rectangle {
-    width: width,
-    height: height,
-};
-# }
-```
-
-%%
-```rust
-struct Rectangle {
-    width: f64,
-    height: f64,
-}
-
-# fn main() {
-let width = 2.0;
-let height = 3.0;
-
-let rect = Rectangle {
-    width,
-    height,
-};
-# }
-```
-%%
 
 ---
 
@@ -272,14 +178,9 @@ let rect = Rectangle {
 
 ### Асоциирани функции
 
---
-
 ```rust
-# fn main() {}
-# struct User { username: String, email: String, sign_in_count: u64 }
-# /*
+# // ignore
 struct User { ... }
-# */
 
 impl User {
     fn new(username: String, email: String) -> User {
@@ -297,6 +198,10 @@ impl User {
     - `struct` блока съдържа само полетата на структурата
     - методи и функции се добавят в отделен `impl` блок
 
+--
+<br>
+- функцията `new` се нарича асоциирана функция - семантично еднаква със статичен метод от други езици
+
 ---
 
 # Методи и асоциирани функции
@@ -304,28 +209,23 @@ impl User {
 ### Асоциирани функции
 
 ```rust
+# #![allow(unused_variables)]
+# #![allow(dead_code)]
 # struct User { username: String, email: String, sign_in_count: u64 }
-# /*
-struct User { ... }
-# */
-
-impl User {
-    fn new(username: String, email: String) -> User {
-        User {
-            username: username,
-            email: email,
-            sign_in_count: 0,
-        }
-    }
-}
-
+# impl User {
+#     fn new(username: String, email: String) -> User {
+#         User { username, email, sign_in_count: 0 }
+#     }
+# }
 # fn main() {
-let user = User::new(String::from("Иванчо"), String::from("ivan40@abv.bg"));
+let user = User::new(
+    String::from("Иванчо"),
+    String::from("ivan40@abv.bg"),
+);
 # }
 ```
 
 --
-- функцията `new` се нарича асоциирана функция - семантично еднаква със статичен метод от други езици
 - когато викаме асоциирани функции като `new`, трябва да ги префиксираме с името на структурата (`User`) и оператора `::`
 
 ---
@@ -335,27 +235,74 @@ let user = User::new(String::from("Иванчо"), String::from("ivan40@abv.bg")
 ### Конструктори и деструктори
 
 --
-- в Rust няма конструктори
+- в Rust няма конструктори, а вместо това се използват асоциирани функции
 --
-- конвенция е да има асоциирана функция, която създава обект от типа
---
-- обикновенно името е
+- често използвани имена за конструктори са
     - `new`
     - `from_*`
     - `with_*`
+
 --
-- но има и изключения
-    - `File::open`
+<br>
+- в Rust има деструктори, но за тях ще говорим по-късно
 
 ---
 
 # Методи и асоциирани функции
 
-### Конструктори и деструктори
+### Още един пример
 
-- в Rust има деструктори
-- дефинират се чрез trait-а Drop
-- за тях ще говорим по-късно
+```rust
+# #![allow(unused_variables)]
+# #![allow(dead_code)]
+struct Rectangle { width: f64, height: f64 }
+
+impl Rectangle {
+    fn new(width: f64, height: f64) -> Rectangle {
+        Rectangle { width, height }
+    }
+}
+# fn main() {}
+```
+
+---
+
+# Методи и асоциирани функции
+
+### Кратък синтаксис за създаване на структури
+
+%%
+```rust
+# #![allow(unused_variables)]
+# #![allow(dead_code)]
+# struct Rectangle { width: f64, height: f64 }
+# fn main() {
+let width = 2.0;
+let height = 3.0;
+
+let rect = Rectangle {
+    width: width,
+    height: height,
+};
+# }
+```
+
+%%
+```rust
+# #![allow(unused_variables)]
+# #![allow(dead_code)]
+# struct Rectangle { width: f64, height: f64 }
+# fn main() {
+let width = 2.0;
+let height = 3.0;
+
+let rect = Rectangle {
+    width,
+    height,
+};
+# }
+```
+%%
 
 ---
 
@@ -364,6 +311,8 @@ let user = User::new(String::from("Иванчо"), String::from("ivan40@abv.bg")
 ### Типа Self
 
 ```rust
+# #![allow(unused_variables)]
+# #![allow(dead_code)]
 struct Rectangle { width: f64, height: f64 }
 
 impl Rectangle {
@@ -386,6 +335,8 @@ impl Rectangle {
 ### Методи
 
 ```rust
+# #![allow(unused_variables)]
+# #![allow(dead_code)]
 struct Rectangle { width: f64, height: f64 }
 
 impl Rectangle {
@@ -411,18 +362,40 @@ impl Rectangle {
 
 ### Методи
 
-Могат да се извикват със синтаксиса за методи
+Методите могат да се използват като асоциирана функция
 
 ```rust
-struct Rectangle { width: f64, height: f64 }
+# #![allow(unused_variables)]
+# #![allow(dead_code)]
+# struct Rectangle { width: f64, height: f64 }
+# impl Rectangle {
+#   fn new(width: f64, height: f64) -> Self { Self { width, height } }
+#   fn area(&self) -> f64 { self.width * self.height }
+# }
+# fn main() {
+let rect = Rectangle::new(2.0, 3.0);
+let area = Rectangle::area(&rect);
 
-impl Rectangle {
-#    fn new(width: f64, height: f64) -> Self { Self { width, height } }
-    fn area(&self) -> f64 {
-        self.width * self.height
-    }
-}
+println!("{}", area);
+# }
+```
 
+---
+
+# Методи и асоциирани функции
+
+### Методи
+
+Но могат и да се извикват със синтаксиса за методи
+
+```rust
+# #![allow(unused_variables)]
+# #![allow(dead_code)]
+# struct Rectangle { width: f64, height: f64 }
+# impl Rectangle {
+#   fn new(width: f64, height: f64) -> Self { Self { width, height } }
+#   fn area(&self) -> f64 { self.width * self.height }
+# }
 # fn main() {
 let rect = Rectangle::new(2.0, 3.0);
 let area = rect.area();
@@ -440,26 +413,58 @@ println!("{}", area);
 
 # Методи и асоциирани функции
 
-### Методи
+### Множество impl блокове
 
-Но могат да се извикват и като асоциирана функция
+Позволено е декларирането на повече от един `impl` блок. Удобно е при групиране на методи.
 
 ```rust
+# // ignore
+# #![allow(unused_variables)]
+# #![allow(dead_code)]
 struct Rectangle { width: f64, height: f64 }
 
 impl Rectangle {
-#    fn new(width: f64, height: f64) -> Self { Self { width, height } }
     fn area(&self) -> f64 {
         self.width * self.height
     }
 }
 
-# fn main() {
-let rect = Rectangle::new(2.0, 3.0);
-let area = Rectangle::area(&rect);
+impl Rectangle {
+    fn perimeter(&self) -> f64 {
+        2 * (self.width + self.height)
+    }
+}
+# fn main() {}
+```
 
-println!("{}", area);
-# }
+--
+Можете ли да забележите грешката в кода?
+
+---
+
+# Методи и асоциирани функции
+
+### Множество impl блокове
+
+Позволено е декларирането на повече от един `impl` блок. Удобно е при групиране на методи.
+
+```rust
+# #![allow(unused_variables)]
+# #![allow(dead_code)]
+struct Rectangle { width: f64, height: f64 }
+
+impl Rectangle {
+    fn area(&self) -> f64 {
+        self.width * self.height
+    }
+}
+
+impl Rectangle {
+    fn perimeter(&self) -> f64 {
+        2 * (self.width + self.height)
+    }
+}
+# fn main() {}
 ```
 
 ---
@@ -471,6 +476,8 @@ println!("{}", area);
 Позволено е декларирането на повече от един `impl` блок. Удобно е при групиране на методи.
 
 ```rust
+# #![allow(unused_variables)]
+# #![allow(dead_code)]
 struct Rectangle { width: f64, height: f64 }
 
 impl Rectangle {
@@ -494,6 +501,7 @@ impl Rectangle {
 Именувани кортежи
 
 ```rust
+# #![allow(unused_variables)]
 # fn main() {
 struct Color(i32, i32, i32);
 struct Point(i32, i32, i32);
@@ -507,9 +515,10 @@ let origin = Point(0, 0, 0);
 
 # Tuple structs
 
-Полетата се достъпват с `.0`, `.1`, и т.н., както при нормален
+Полетата се достъпват с `.0`, `.1`, и т.н., както при нормален кортеж
 
 ```rust
+# #![allow(unused_variables)]
 # fn main() {
 struct Color(i32, i32, i32);
 
@@ -526,6 +535,7 @@ println!("r: {}, g: {}, b: {}", black.0, black.1, black.2);
 Възможна е декларацията на празни структури. Могат да се използват като маркери - големината им е 0 байта.
 
 ```rust
+# #![allow(unused_variables)]
 # fn main() {
 struct Electron {}
 struct Proton;
@@ -547,14 +557,6 @@ let y = Proton;
 
 # Модули
 
-- начин да си организираме кода в отделни namespaces
---
-- обикновенно йерархията от модули съвпада с йерархията на файловете на проекта ни
-
----
-
-# Модули
-
 Нека си създадем библиотека:
 
 `$ cargo new communicator --lib`
@@ -570,17 +572,10 @@ communicator
 
 # Модули
 
-- главния файл на проекта ни е и главния модул
-    - src/main.rs
-    - src/lib.rs
-
----
-
-# Модули
-
-Можем да дефинираме подмодули в същия файл
+Дефиниране на модули във файл
 
 ```rust
+# #![allow(dead_code)]
 // src/lib.rs
 
 mod network {
@@ -597,26 +592,14 @@ mod client {
 # fn main() {}
 ```
 
----
-
-# Модули
-
-Можем да дефинираме подмодули и в отделни файлове
-
-```sh
-communicator
-├── Cargo.toml
-└── src
-    ├── client.rs
-    ├── lib.rs
-    └── network.rs
-```
+--
+Двете `connect` функции са различни, тъй като са в отделни модули
 
 ---
 
 # Модули
 
-Можем да дефинираме подмодули и в отделни файлове
+Дефиниране на модули чрез файловата система
 
 ```rust
 # // ignore
@@ -628,6 +611,7 @@ mod client;
 
 %%
 ```rust
+# #![allow(dead_code)]
 // src/network.rs
 
 fn connect() {
@@ -637,6 +621,7 @@ fn connect() {
 ```
 %%
 ```rust
+# #![allow(dead_code)]
 // src/client.rs
 
 fn connect() {
@@ -646,17 +631,29 @@ fn connect() {
 ```
 %%
 
---
-- декларираме подмодулите с `mod MOD_NAME;`
-- компилатора търси файл `./MOD_NAME.rs` или `./MOD_NAME/mod.rs`
-
 ---
 
 # Модули
 
-Можем да имаме няколко нива на подмодули
+Дефиниране на модули чрез файловата система
+
+```sh
+communicator
+├── Cargo.toml
+└── src
+    └── client.rs
+    └── lib.rs
+    └── network.rs
+```
+
+---
+
+# Подмодули
+
+Дефиниране на подмодули във файл
 
 ```rust
+# #![allow(dead_code)]
 // src/lib.rs
 
 mod network {
@@ -676,25 +673,9 @@ mod network {
 
 ---
 
-# Модули
+# Подмодули
 
-Ако искаме да са в отделни файлове трябва да използваме директории
-
-```sh
-communicator
-├── Cargo.toml
-└── src
-    ├── lib.rs
-    └── network
-        ├── client.rs
-        └── mod.rs
-```
-
----
-
-# Модули
-
-Ако искаме да са в отделни файлове трябва да използваме директории
+Дефиниране на подмодули чрез файловата система
 
 ```rust
 # // ignore
@@ -703,6 +684,7 @@ communicator
 mod network;
 ```
 
+%%
 ```rust
 # // ignore
 // src/network/mod.rs
@@ -713,8 +695,9 @@ fn connect() {
     // ...
 }
 ```
-
+%%
 ```rust
+# #![allow(dead_code)]
 // src/network/client.rs
 
 fn connect() {
@@ -722,6 +705,26 @@ fn connect() {
 }
 # fn main() {}
 ```
+%%
+
+---
+
+# Подмодули
+
+Дефиниране на подмодули чрез файловата система
+
+```sh
+communicator
+├── Cargo.toml
+└── src
+    └── lib.rs
+    └── network
+        └── client.rs
+        └── mod.rs
+```
+
+--
+Компилаторът търси за файловете `MOD_NAME.rs` или `MOD_NAME/mod.rs`
 
 ---
 
@@ -730,6 +733,7 @@ fn connect() {
 В модул имаме директен достъп до всичко останало дефинирано в модула
 
 ```rust
+# #![allow(dead_code)]
 mod client {
     fn connect() { /* ... */ }
 
@@ -745,10 +749,28 @@ mod client {
 
 # Достъп
 
+- ако искаме да използваме нещо извън модула трябва да използваме пълното име
+--
+- пълното име започва с име на crate-а или ключовата дума `crate` ако е дефинирано в нашия проект
+--
+- след това следва пътя до item-а
+--
+    - `crate::client::connect`
+    - `std::vec::Vec`
+--
+- ако искаме да използваме повече от едно нещо `crate::client::{something, some_other_thing}`
+--
+- или ако искаме да използваме всичко от даден модул `crate::client::*` (удобно за `prelude` модули)
+
+---
+
+# Достъп
+
 Ако искаме да използваме нещо извън модула трябва да използваме пълното име
 
 ```rust
 # // ignore
+# #![allow(dead_code)]
 mod client {
     fn connect() { /* ... */ }
 }
@@ -761,14 +783,6 @@ mod network {
 # fn main() {}
 ```
 
---
-- пълното име започва с име на crate-а или ключовата дума `crate` ако е дефинирано в нашия проект
---
-- след това следва пътя до item-а
---
-    - `crate::client::connect`
-    - `std::vec::Vec`
-
 ---
 
 # Достъп
@@ -776,6 +790,7 @@ mod network {
 Ако искаме да използваме нещо извън модула трябва да използваме пълното име..
 
 ```rust
+# #![allow(dead_code)]
 mod client {
     fn connect() { /* ... */ }
 }
@@ -795,6 +810,7 @@ mod network {
 ... и освен това то трябва да е публично достъпно (keyword `pub`)
 
 ```rust
+# #![allow(dead_code)]
 mod client {
     pub fn connect() { /* ... */ }
 }
@@ -814,6 +830,7 @@ mod network {
 Можем да използваме `use` за да импортираме имена от друг модул
 
 ```rust
+# #![allow(dead_code)]
 mod client {
     pub fn connect() { /* ... */ }
 }
@@ -828,24 +845,16 @@ mod network {
 # fn main() {}
 ```
 
---
-- ако искаме да импортираме повече от едно нещо: `use crate::client::{something, some_other_thing}`
---
-- или ако искаме да импортираме всичко от даден модул: `use crate::client::*` (удобно за `prelude` модули)
-
 ---
 
 # Достъп
 
-Ако искаме да импортираме неща от подмодул, може да използваме `use self::...` или `use super::...` за релативен път
+Ако искаме да импортираме неща от подмодул, може да използваме `use self::...` за релативен път
 
 ```rust
-# #![allow(unused_imports)]
+# #![allow(dead_code)]
 mod network {
     mod client {
-        // еквивалентно на use crate::network::init;
-        use super::init;
-
         pub fn connect() { /* ... */ }
     }
 
@@ -859,6 +868,10 @@ mod network {
 # fn main() {}
 ```
 
+--
+
+Също така има и `use super::...` за релативен път, който започва от по-горния модул
+
 ---
 
 # Достъп: public и private
@@ -866,7 +879,7 @@ mod network {
 --
 - по подразбиране всичко е private
 --
-- за да се направи нещо достъпно извън модула, в който е дефинирано, се използва ключовата дума `pub`
+- за да се направи нещо достъпно извън модула, в който е дефинирано, се използва `pub`
 --
 - винаги има достъп до нещата, които са дефинирани в текущия модул, или по-нагоре в йерархията
 
@@ -878,6 +891,8 @@ mod network {
 
 ```rust
 # // ignore
+# #![allow(dead_code)]
+# #![allow(unused_variables)]
 mod product {
     pub struct User {
         username: String,
@@ -899,9 +914,11 @@ fn main() {
 
 # Достъп: public и private
 
-Резултата
+Резултатът
 
 ```rust
+# #![allow(dead_code)]
+# #![allow(unused_variables)]
 mod product {
     pub struct User {
         username: String,
@@ -923,10 +940,11 @@ fn main() {
 
 # Достъп: public и private
 
-Както казахме, по подразбиране всичко е private за външни модули, включително и полета на структурата.
-Затова трябва да ги отбележим с `pub`.
+Това може да се поправи като направим полетата публични
 
 ```rust
+# #![allow(dead_code)]
+# #![allow(unused_variables)]
 mod product {
     pub struct User {
         pub username: String,
@@ -944,6 +962,9 @@ fn main() {
 }
 ```
 
+--
+Както казахме, по подразбиране всичко е private за външни модули, включително и полета на структурата
+
 ---
 
 # Достъп: public и private
@@ -951,6 +972,8 @@ fn main() {
 Без проблем може да достъпим private полета от същия модул в който е дефинирана структурата
 
 ```rust
+# #![allow(dead_code)]
+# #![allow(unused_variables)]
 mod product {
     pub struct User {
         username: String,
@@ -974,9 +997,11 @@ fn main() {
 
 # Достъп: public и private
 
-Както и без проблем може да достъпим private полета от подмодул
+Както и без проблем може да достъпим private полета в подмодул..
 
 ```rust
+# #![allow(dead_code)]
+# #![allow(unused_variables)]
 mod product {
     pub struct User {
         username: String,
@@ -1004,9 +1029,11 @@ fn main() {
 
 # Достъп: public и private
 
-Но ако модулите са съседни не можем
+..но не и ако модулите са съседи
 
 ```rust
+# #![allow(dead_code)]
+# #![allow(unused_variables)]
 mod product {
     mod dto {
         pub struct User {
@@ -1024,42 +1051,6 @@ mod product {
     }
 }
 # fn main() {}
-```
-
----
-
-# Достъп: public и private
-
-Тези правила важат и за tuple structs
-
-```rust
-mod product {
-    pub struct UserId(u64);
-}
-
-use self::product::UserId;
-
-fn main() {
-    let id = UserId(123);
-}
-```
-
----
-
-# Достъп: public и private
-
-Тези правила важат и за tuple structs
-
-```rust
-mod product {
-    pub struct UserId(pub u64);
-}
-
-use self::product::UserId;
-
-fn main() {
-    let id = UserId(123);
-}
 ```
 
 ---
@@ -1092,9 +1083,9 @@ fn main() {
 
 ---
 
-# Cargo.toml
-
 Трябва да си добавим пакета като зависомист на проекта ни
+
+# Cargo.toml
 
 ```toml
 [package]
@@ -1110,8 +1101,6 @@ edition = "2018"
 
 # Cargo.toml
 
-Трябва да си добавим пакета като зависомист на проекта ни
-
 ```toml
 [package]
 name = "number_guessing_game"
@@ -1122,6 +1111,12 @@ edition = "2018"
 [dependencies]
 rand = "0.7.2"
 ```
+
+---
+
+# Cargo.toml
+
+Ако инсталирате `cargo-edit` чрез `cargo install cargo-edit`, може да използвате `cargo add`, което прави същото нещо автоматично с `cargo add rand`
 
 ---
 

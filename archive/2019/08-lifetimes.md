@@ -2,7 +2,7 @@
 title: Lifetimes
 author: Rust@FMI team
 speaker: Никола Стоянов
-date: 04 ноември 2020
+date: 05 ноември 2019
 lang: bg
 keywords: rust,fmi
 # description:
@@ -13,28 +13,38 @@ font-family: Arial, Helvetica, sans-serif
 code-theme: github
 ---
 
+# Административни неща
+
+- първото домашно приключи
+
+---
+
 # Преговор
 
 --
 - конвертиране: `From`, `Into`
 --
-- парсене на низове: `FromStr`, `str::parse`
+- парсене на низове: `FromStr, str::parse`
 --
 - error handling: `Result`
 --
 - error handling: `panic!`
 --
 - error handling: `try!`, оператор `?`
+--
+- IO: `Read`, `Write`, `BufRead`, `BufWrite`
 
 ---
 
-# Lifetimes
+# Жизнени цикли
+
+<img src="images/circle_of_life.jpg" style="width: 100%;" />
 
 ---
 
-# Lifetimes
+# Жизнени цикли
 
-Ще говорим за интервала в който една стойност е жива
+Интервалът в който една стойност е жива
 
 ```rust
 # fn main()
@@ -50,7 +60,7 @@ code-theme: github
 
 # Lifetime на променлива със собственост
 
-Стойността живее докато променливата е в scope
+Стойността живее докато е в scope - очевидно
 
 ```rust
 # fn main()
@@ -58,24 +68,6 @@ code-theme: github
     let s = String::from("five"); // --+
                                   //   |
 } // <---------------------------------+
-```
-
----
-
-# Lifetime на променлива със собственост
-
-Стойността живее докато променливата е в scope
-
-```rust
-# fn main()
-{
-    let s = String::from("five"); // --+
-                                  //   |
-                 // v------------------+
-    takes_ownership(s);
-}
-
-fn takes_ownership(s: String) {}
 ```
 
 ---
@@ -116,7 +108,7 @@ fn takes_ownership(s: String) {}
 
 # Lifetime на референция
 
-Иначе borrow checker-а ще се скара
+Иначе borrow checker-а ще изръмжи
 
 ```rust
 # // ignore
@@ -137,7 +129,7 @@ fn takes_ownership(s: String) {}
 
 # Lifetime на референция
 
-Иначе borrow checker-а ще се скара
+Иначе borrow checker-а ще изръмжи
 
 ```rust
 # fn main()
@@ -221,7 +213,7 @@ fn takes_ownership(s: String) {}
 ```
 
 --
-`r2` е референция към стойността зад `x`. Важно е `r2` да не надживява `x`
+`r2` е референция към стойността `x`. Важно е `r2` да не надживява `x`
 
 ---
 
@@ -229,7 +221,7 @@ fn takes_ownership(s: String) {}
 
 - можем ли да счупим borrow checker-а?
 --
-- да пробваме да дефинираме следната функция
+- нека си дефинираме следната функция
 
 ```rust
 # // ignore
@@ -238,6 +230,9 @@ fn longer(s1: &str, s2: &str) -> &str {
     if s1.len() > s2.len() { s1 } else { s2 }
 }
 ```
+
+--
+- ок?
 
 ---
 
@@ -295,11 +290,13 @@ fn longer(s1: &str, s2: &str) -> &str {
 
 # Lifetime анотации
 
+![](images/brick_wall.jpg)
+
 ---
 
 # Lifetime анотации
 
-Какъв е проблема?
+Какъв е проблема
 
 --
 - искаме да поддържаме функции като `longer`
@@ -314,7 +311,7 @@ fn longer(s1: &str, s2: &str) -> &str {
 
 # Lifetime анотации
 
-Грешката ни казва, че трябва да означим дали върнатият резултат живее колкото параметъра `s1` или колкото параметъра `s2`
+Грешката ни казва, че трябва да означим дали върнатият резултат живее колкото параметъра `a` или колкото параметъра `b`
 
 ```rust
 # // norun
@@ -346,8 +343,6 @@ fn longer<'a>(s1: &'a str, s2: &'a str) -> &'a str {
 
 --
 - `'а` се нарича lifetime параметър или lifetime анотация
---
-- специален вид generic параметър
 --
 - използва се да се означи колко дълго живее референция
 --
@@ -637,12 +632,6 @@ let s: &'static str = "I have a static lifetime.";
 
 # Референции в структури
 
-![](images/brick_wall.jpg)
-
----
-
-# Референции в структури
-
 Нека имаме структура, която връща думите от текст.
 
 ```rust
@@ -667,7 +656,7 @@ impl Words {
 --
 - може да е тип който държи стойност, като `String`, но тогава ще имаме излишно копиране
 --
-- може да пробваме да е референция
+- а може и да е референция
 
 ---
 
@@ -822,6 +811,7 @@ impl<'a> Words<'a> {
 В случая `Self` означава `Words<'a>`:
 
 ```rust
+# // ignore
 # struct Words<'a> {
 #     text: &'a str,
 # }
@@ -833,9 +823,41 @@ impl<'a> Words<'a> {
 # fn main() {}
 ```
 
+--
+
+Expanded:
+
+```rust
+# // ignore
+# struct Words<'a> {
+#     text: &'a str,
+# }
+impl<'a> Words<'a> {
+    fn new<'b>(text: &'b str) -> Words<'a> {
+        Words { text }
+    }
+}
+# fn main() {}
+```
+
 ---
 
 # Lifetime elision в impl блок
+
+В случая `Self` означава `Words<'a>`:
+
+```rust
+# // ignore
+# struct Words<'a> {
+#     text: &'a str,
+# }
+impl<'a> Words<'a> {
+    fn new(text: &str) -> Words<'a> {
+        Words { text }
+    }
+}
+# fn main() {}
+```
 
 Expanded:
 
@@ -1052,18 +1074,16 @@ fn main() {
 
 # Lifetimes & generics
 
----
-
-# Lifetimes & generics
-
 ```rust
-trait MyTrait {}
-impl MyTrait for String {}
+# trait ToJson { fn to_json(&self) -> String; }
+impl ToJson for String {
+    fn to_json(&self) -> String {
+        format!("{:?}", self)
+    }
+}
 
-struct Wrapper<T: MyTrait>(T);
-
-fn save_for_later<T: MyTrait>(something: T) -> Wrapper<T> {
-    Wrapper(something)
+fn save_for_later<T: ToJson>(to_json: T) -> Box<T> {
+    Box::new(to_json)
 }
 
 fn main() {
@@ -1072,8 +1092,8 @@ fn main() {
         save_for_later(s)
     };
 
-    let inner = &saved.0;
-    println!("{}", inner);
+    let inner = &*saved;
+    println!("{}", inner.to_json());
 }
 ```
 
@@ -1082,13 +1102,15 @@ fn main() {
 # Lifetimes & generics
 
 ```rust
-trait MyTrait {}
-impl<'a> MyTrait for &'a String {}
+# trait ToJson { fn to_json(&self) -> String; }
+impl<'a> ToJson for &'a String {
+    fn to_json(&self) -> String {
+        format!("{:?}", self)
+    }
+}
 
-struct Wrapper<T: MyTrait>(T);
-
-fn save_for_later<T: MyTrait>(something: T) -> Wrapper<T> {
-    Wrapper(something)
+fn save_for_later<T: ToJson>(to_json: T) -> Box<T> {
+    Box::new(to_json)
 }
 
 fn main() {
@@ -1097,8 +1119,8 @@ fn main() {
         save_for_later(&s)
     };
 
-    let inner = &saved.0;
-    println!("{}", inner);
+    let inner = &*saved;
+    println!("{}", inner.to_json());
 }
 ```
 
@@ -1106,7 +1128,7 @@ fn main() {
 
 # Lifetimes & generics
 
-- generic тип `T` може да е референция
+- шаблонен тип `T` може да е референция
 --
 - тогава той има lifetime, макар че няма lifetime параметър
 --
@@ -1116,24 +1138,22 @@ fn main() {
 
 # Lifetimes & generics
 
-- generic тип `T` може да е и тип с ownership
+- приема се, че тип който има собственост над стойността която съдържа има lifetime `'static`
 --
-- в този случай се приема, че `T` има lifetime `'static`
-
----
-
-# Lifetimes & generics
-
-Aко искаме да запазим нещо за дълго можем да използваме ограничение `'static`
+- ако искаме да запазим нещо за дълго можем да използваме ограничение `'static`
+--
 
 ```rust
-# trait MyTrait {}
-# impl MyTrait for String {}
-# impl<'a> MyTrait for &'a String {}
-# struct Wrapper<T: MyTrait>(T);
+# trait ToJson { fn to_json(&self) -> String; }
+# impl ToJson for String {
+#     fn to_json(&self) -> String { format!("{:?}", self) }
+# }
+# impl<'a> ToJson for &'a String {
+#     fn to_json(&self) -> String { format!("{:?}", self) }
+# }
 #
-fn save_for_later<T: MyTrait + 'static>(something: T) -> Wrapper<T> {
-    Wrapper(something)
+fn save_for_later<T: ToJson + 'static>(to_json: T) -> Box<T> {
+    Box::new(to_json)
 }
 
 fn main() {
@@ -1141,121 +1161,10 @@ fn main() {
         let s = String::from("yippie");
         save_for_later(s)   // OK, T = String => T: 'static
     };
-}
-```
 
----
-
-# Lifetimes & generics
-
-Aко искаме да запазим нещо за дълго можем да използваме ограничение `'static`
-
-```rust
-# trait MyTrait {}
-# impl MyTrait for String {}
-# impl<'a> MyTrait for &'a String {}
-# struct Wrapper<T: MyTrait>(T);
-#
-fn save_for_later<T: MyTrait + 'static>(something: T) -> Wrapper<T> {
-    Wrapper(something)
-}
-
-fn main() {
     let saved = {
         let s = String::from("yippie");
         save_for_later(&s)   // Err, T = &'a String => T: 'a
     };
 }
 ```
-
----
-
-# Lifetimes, generics & dynamic dispatch
-
-Имаме подобен проблем ако искаме да ползваме dynamic dispatch
-
-```rust
-# trait MyTrait {}
-# impl MyTrait for String {}
-# impl<'a> MyTrait for &'a String {}
-#
-fn save_for_later<T: MyTrait>(something: T) -> Box<dyn MyTrait> {
-    Box::new(something)
-}
-
-fn main() {
-    // ...
-}
-```
-
----
-
-# Lifetimes, generics & dynamic dispatch
-
-По подразбиране dyn Trait има ограничение `'static`
-
-```rust
-# trait MyTrait {}
-# impl MyTrait for String {}
-# impl<'a> MyTrait for &'a String {}
-#
-fn save_for_later<T: MyTrait>(something: T) -> Box<dyn MyTrait + 'static> {
-    Box::new(something)
-}
-
-fn main() {
-    // ...
-}
-```
-
----
-
-# Lifetimes, generics & dynamic dispatch
-
-Можем да сложим различно ограничение
-
-```rust
-# trait MyTrait {}
-# impl MyTrait for String {}
-# impl<'a> MyTrait for &'a String {}
-#
-fn save_for_later<'a, T: MyTrait + 'a>(something: T) -> Box<dyn MyTrait + 'a> {
-    Box::new(something)
-}
-
-fn main() {
-    let s = String::from("yippie");
-    let saved = save_for_later(&s);
-}
-```
-
----
-
-# Lifetimes, generics & dynamic dispatch
-
-Разбира се в този случай резултатът от функцията има ограничен lifetime
-
-```rust
-# trait MyTrait {}
-# impl MyTrait for String {}
-# impl<'a> MyTrait for &'a String {}
-#
-fn save_for_later<'a, T: MyTrait + 'a>(something: T) -> Box<dyn MyTrait + 'a> {
-    Box::new(something)
-}
-
-fn main() {
-    let saved = {
-        let s = String::from("yippie");
-        save_for_later(&s)
-    };
-}
-```
-
----
-
-# Бонус материал
-
-- *за напреднали*
-- Stacked Borrows: An Aliasing Model for Rust
-- https://plv.mpi-sws.org/rustbelt/stacked-borrows/

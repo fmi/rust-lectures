@@ -1,11 +1,11 @@
 ---
-title: Enums & Pattern-matching
+title: Изброени типове и съпоставяне на образци
 author: Rust@FMI team
 speaker: Андрей Радев
-date: 19 октомври 2019
+date: 22 октомври 2019
 lang: bg
 keywords: rust,fmi
-description: ("Изброени типове" и "съпоставяне на образци")
+# description:
 slide-width: 80%
 font-size: 20px
 font-family: Arial, Helvetica, sans-serif
@@ -29,9 +29,7 @@ code-theme: github
 # Enums
 
 * Скучно име, идващо от C, където са доста ограничени
---
-* По-готини имена са "algebraic datatype" и "sum type"
---
+* По-готиното име е "алгебричен тип", и е мощно средство за типови шмекерии
 
 ```rust
 # //ignore
@@ -224,10 +222,6 @@ let m = Message::Write(String::from("hello"));
 m.call();
 ```
 
---
-
-А какво точно правим вътре в `call`? Ще видим след няколко слайда :)
-
 ---
 
 # Разполагане в паметта
@@ -330,7 +324,7 @@ fn main() {
 
 ---
 
-# Енума Option
+# Енумерацията Option
 
 --
 * Понякога искаме да изразим липсваща стойност.
@@ -345,7 +339,7 @@ fn main() {
 
 ---
 
-# Енума Option
+# Енумерацията Option
 
 Option има 2 стойности:
 
@@ -354,7 +348,7 @@ Option има 2 стойности:
 
 ---
 
-# Енума Option
+# Енумерацията Option
 
 ```rust
 # fn main() {
@@ -370,7 +364,7 @@ println!("{:?}", absent_number);
 
 ---
 
-# Енума Option
+# Енумерацията Option
 
 ```rust
 # fn main() {
@@ -388,18 +382,20 @@ println!("{:?}", absent_number);
 
 # Pattern Matching
 
-### "Съпоставяне на образци"
+### Съпоставяне на образци
 
 --
 * Идея идваща от функционалното програмиране
 --
-* Може да се ползва с енуми и стойности в тях
+* Може да се ползва с енумерации и стойности в тях
 --
 * Използва се чрез `match` оператора
 
 ---
 
 # Pattern Matching
+
+### Съпоставяне на образци
 
 ```rust
 # fn main() {
@@ -416,6 +412,8 @@ match x {
 
 # Pattern Matching
 
+### Съпоставяне на образци
+
 ```rust
 # fn main() {
 let x: Option<u32> = None;
@@ -430,6 +428,8 @@ match x {
 ---
 
 # Pattern Matching
+
+### Съпоставяне на образци
 
 `match` може да върне стойност:
 
@@ -450,6 +450,8 @@ println!("{:?}", y);
 
 # Pattern Matching
 
+### Съпоставяне на образци
+
 `match` може да върне стойност:
 
 ```rust
@@ -469,6 +471,8 @@ println!("{:?}", y);
 
 # Pattern Matching
 
+### Съпоставяне на образци
+
 `match` може да излезе от функцията
 
 ```rust
@@ -484,6 +488,8 @@ let y = match x {
 ---
 
 # Pattern Matching
+
+### Съпоставяне на образци
 
 `match` може да съдържа блокове от код:
 
@@ -507,6 +513,8 @@ let y = match x {
 
 # Pattern Matching
 
+### Съпоставяне на образци
+
 Задължително трябва да се покрият всички случаи!
 
 ```rust
@@ -521,6 +529,8 @@ let y = match x {
 ---
 
 # Pattern Matching
+
+### Съпоставяне на образци
 
 Работи и с прости стойности: `_` означава всичко останало
 
@@ -538,6 +548,8 @@ match x {
 ---
 
 # Pattern Matching
+
+### Съпоставяне на образци
 
 НО! Ръкавите трябва да са от един и същ тип
 
@@ -611,8 +623,6 @@ while let Some(8) = iter8or.next() {
 ---
 
 # Итерация
-
-### ... и някои леко неинтуитивни изненади
 
 ```rust
 # //ignore
@@ -943,44 +953,9 @@ match user {
 
 ---
 
-# Pattern Matching
-
-### Slice
-
-```rust
-# fn main() {
-let cake: &[&str] = &["vanilla", "strawberry", "chocolate"];
-
-match cake {
-    []         => println!("Turns out it's a lie :/"),
-    [one_item] => println!("One slice is better than nothing"),
-    _          => println!("Wow, that's a lotta slices!")
-}
-# }
-```
-
-Нищо по-fancy засега... очакват се по-интересни неща по-нататък.
-
----
-
 # Destructuring
 
-```rust
-#[derive(Debug)]
-enum Token { Text(String), Number(f64) }
-
-fn main() {
-    let token = Token::Text(String::from("Отговора е 42"));
-    match token {
-        Token::Text(text) => println!("Токена е текст: '{}'", text),
-        Token::Number(n)  => println!("Токена е число: {}", n),
-    }
-}
-```
-
----
-
-# Destructuring
+### ref
 
 ```rust
 #[derive(Debug)]
@@ -1001,28 +976,7 @@ fn main() {
 
 # Destructuring
 
-### `match token` -> `match &token`
-
-```rust
-#[derive(Debug)]
-enum Token { Text(String), Number(f64) }
-
-fn main() {
-    let token = Token::Text(String::from("Отговора е 42"));
-    match &token {
-        Token::Text(text) => println!("Токена е текст: '{}'", text),
-        Token::Number(n)  => println!("Токена е число: {}", n),
-    }
-
-    println!("В крайна сметка, токена е {:?}!", token);
-}
-```
-
----
-
-# Destructuring
-
-### Друг вариант: ref
+### ref
 
 Чрез `ref` стойността няма да се премести.
 
@@ -1053,9 +1007,8 @@ fn main() {
 ```rust
 # //ignore
 # fn main() {
-let x = &1_u32;
-
-let ref y = 1_u32;
+let x = &1;
+let ref y = 1;
 # }
 ```
 
@@ -1072,51 +1025,12 @@ let ref y = 1_u32;
 
 # Destructuring
 
-* Използвайте `match foo` ако искате да вземете ownership над вътрешните стойности
---
-* Използвайте `match &foo` ако искате да достъпвате вътрешностите по reference
---
-* (Basically, изчакайте компилатора да се оплаче и добавете `&` :))
---
-* Знайте за `ref` и какво прави
-
----
-
-# Destructuring
-
-### &mut
-
-Същата идея:
-
-```rust
-# #[allow(dead_code)]
-# #[derive(Debug)]
-# enum Token { Text(String), Number(f64) }
-# fn main() {
-let mut token = Token::Text(String::from("Отговора е 42"));
-
-match &mut token {
-    Token::Text(text) => {
-        *text = String::from("Може би");
-        println!("Токена е Text('{}')", text)
-    },
-    Token::Number(n) => println!("Токена е Number({})", n),
-}
-# }
-```
-
----
-
-# Destructuring
-
 ### ref mut
 
 Същата идея:
 
 ```rust
-# #[allow(dead_code)]
-# #[derive(Debug)]
-# enum Token { Text(String), Number(f64) }
+# //ignore
 # fn main() {
 let mut token = Token::Text(String::from("Отговора е 42"));
 
@@ -1140,7 +1054,7 @@ match token {
 # //ignore
 # fn main() {
 let (mut a, b) = (1, 2);
-let User { name: name_var, .. } = user;
+let User { name: name, .. } = user;
 let User { name, .. } = user;
 let Some(val) = Some(5);    // ??
 # }
@@ -1206,27 +1120,6 @@ if let (8, b) = (1, 2) {
     println!("{}", b);
 } else {
     println!("8(");
-}
-# }
-```
-
----
-
-# Refutable/Irrefutable patterns
-
-### big if true
-
-```rust
-# #[allow(unused_variables)]
-#[allow(irrefutable_let_patterns)]
-
-# fn main() {
-if let x = true {
-    println!("Yup! x = {:?}", x)
-}
-
-if let x = false {
-    println!("Also yup! x = {:?}", x)
 }
 # }
 ```
