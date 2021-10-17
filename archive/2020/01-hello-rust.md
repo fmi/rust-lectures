@@ -13,13 +13,6 @@ font-family: Arial, Helvetica, sans-serif
 code-theme: github
 ---
 
-# Административни неща
-
-- Питайте въпроси в чата, ще правим паузи за отговори
-- Записваме видео
-
----
-
 # Hello, world!
 
 Защото винаги от там се почва:
@@ -221,24 +214,6 @@ x += 1;
 
 ---
 
-# Променливи
-
-### mutability
-
-Това е различно от shadowing!
-
-```rust
-# // norun
-# #[allow(unused_variables)]
-# #[allow(unused_assignments)]
-# fn main() {
-let x = 5;
-let x = x + 1;
-# }
-```
-
----
-
 # Основни типове
 
 ### Целочислени типове
@@ -251,16 +226,6 @@ let x = x + 1;
 --
 - `isize` и `usize` имат размер колкото машинната дума - 32 бита на 32 битов ОС и 64 бита на 64 битов ОС
 
---
-
-```rust
-# // norun
-# #![allow(unused_variables)]
-# fn main() {
-let x: u32 = 1337;
-# }
-```
-
 ---
 
 # Основни типове
@@ -272,24 +237,11 @@ let x: u32 = 1337;
 * Специфичен тип: `42u32`
 --
 * Големи числа: `133_587`
-* `1_000_000`
---
 * `42_u32`
 --
 * `1_0_0_0`
 --
 * `1_____________________________________________________4`
-
---
-
-```rust
-# // norun
-# #![allow(unused_variables)]
-# fn main() {
-let x: u32 = 1337;
-let x = 1337_u32;
-# }
-```
 
 ---
 
@@ -313,32 +265,14 @@ let x = 1337_u32;
 - `3.14`
 - `1.3_f64`
 
---
-
-```rust
-# // norun
-# #![allow(unused_variables)]
-# fn main() {
-let x: f64 = 3.14;
-# }
-```
-
 ---
 
 # Основни типове
 
-### Булеви стойности
+### bool
 
 - `bool`
 - стойности `true` и `false`
-
-```rust
-# // norun
-# #![allow(unused_variables)]
-# fn main() {
-let x: bool = true;
-# }
-```
 
 ---
 
@@ -641,12 +575,6 @@ if bool_expression {
 } else {
     // ...
 }
-
-if 2 > 1 {
-    println!("okay");
-} else {
-    println!("wait what");
-}
 # }
 ```
 
@@ -667,10 +595,6 @@ if 2 > 1 {
 # let iterable: &[()] = &[];
 for var in iterable {
     // ...
-}
-
-for n in [1, 2, 3] {
-    println!("N: {}", n);
 }
 # }
 ```
@@ -868,7 +792,6 @@ fn print_a(a: u32) {
     println!("{}", a);
 }
 
-# #[allow(dead_code)]
 fn print_b(b: u32) -> () {
     println!("{}", b);
 }
@@ -895,24 +818,6 @@ fn good_a(a: u32, a_is_bad: bool) -> u32 {
 
 * Ако искаме да излезем от функцията преди последния ред, може да използваме `return`
 * Използване на `return` на последния ред от тялото се счита за лоша практика
-
----
-
-# Анонимни функции (closures)
-
-```rust
-fn add1(a: u32, b: u32) -> u32 {
-    a + b
-}
-
-fn main() {
-    let add2 = |a, b| { a + b };
-
-    println!("add1: {}\nadd2: {}", add1(1, 2), add2(1, 2));
-}
-```
-
-* Ще говорим доста повече за тях по-нататък
 
 ---
 
@@ -978,5 +883,7 @@ dbg!(y);
 - Инсталирайте си Rust: https://2017.fmi.rust-lang.bg/topics/1
 --
 - Елате в Discord канала: https://discord.gg/r9Wcazk
+--
+- От другия път -- с парола! Вижте си секция "Табло" в сайта
 --
 - Първо предизвикателство (не много предизвикателно): https://fmi.rust-lang.bg/challenges/1

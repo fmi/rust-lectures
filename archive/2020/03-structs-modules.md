@@ -2,7 +2,7 @@
 title: Структури, модули, външни пакети
 author: Rust@FMI team
 speaker: Никола
-date: 14 октомври 2021
+date: 14 октомври 2020
 lang: bg
 keywords: rust,fmi
 # description:
@@ -35,6 +35,15 @@ code-theme: github
 # Административни неща
 
 - Предизвикателство 1 свърши
+
+---
+
+# Съдържание
+
+- Структури
+- Методи
+- Модули
+- Използване на пакети от crates.io
 
 ---
 
@@ -138,7 +147,7 @@ println!("{}, {}", user_ref.username, user_ref.email);
 
 ### Промяна на полетата
 
-Можем да променяме стойността на полетата, ако инстанцията е дефинирана като `mut`.
+Можем да променяме стойността на полетата, ако обекта е дефиниран като `mut`.
 
 ```rust
 # fn main() {
@@ -164,98 +173,7 @@ println!("{}, {}", user.username, user.email);
 
 # Структури
 
-### Преместване на структури
-
-По подразбиране структурите се преместват (защото не имплементират `Copy`).
-
-```rust
-# fn main() {
-struct User {
-    username: String,
-    email: String,
-    sign_in_count: u64
-}
-
-let user1 = User {
-    username: String::from("Иванчо"),
-    email: String::from("ivan40@abv.bg"),
-    sign_in_count: 10,
-};
-
-let user2 = user1;
-
-println!("user1 = {}, {}", user1.username, user1.email);
-println!("user2 = {}, {}", user2.username, user2.email);
-# }
-```
-
----
-
-# Структури
-
-### Клониране на структури
-
-За да можем да създаваме копия на нашата структура, тя трябва да имплементира trait-а `Clone`.
-Чрез атрибута `#[derive(Clone)]` компилатора автоматично ще ни създаде имплементация на `Clone`.
-
-```rust
-# fn main() {
-#[derive(Clone)]
-struct User {
-    username: String,
-    email: String,
-    sign_in_count: u64
-}
-
-let user1 = User {
-    username: String::from("Иванчо"),
-    email: String::from("ivan40@abv.bg"),
-    sign_in_count: 10,
-};
-
-let user2 = user1.clone();
-
-println!("user1 = {}, {}", user1.username, user1.email);
-println!("user2 = {}, {}", user2.username, user2.email);
-# }
-```
-
----
-
-# Структури
-
-### Принтиране на структури
-
-Аналогично можем да използваме атрибута `#[derive(Debug)]` за да получим имплементация на trait-а `Debug`.
-Това ни позволява да принтираме нашата структура с `println!` инползвайки placeholder `{:?}`.
-
-```rust
-# fn main() {
-#[derive(Clone, Debug)]
-struct User {
-    username: String,
-    email: String,
-    sign_in_count: u64
-}
-
-let user1 = User {
-    username: String::from("Иванчо"),
-    email: String::from("ivan40@abv.bg"),
-    sign_in_count: 10,
-};
-
-let user2 = user1.clone();
-
-println!("user1 = {:?}", user1);
-println!("user2 = {:?}", user2);
-# }
-```
-
----
-
-# Структури
-
-### Struct update синтаксис
+### Struct update syntax
 
 Можем да дадем стойност само на част от полетата и останалите да попълним от друга инстанция
 
@@ -280,7 +198,7 @@ println!("{}, {}", hacker.username, hacker.email);
 
 # Структури
 
-### Struct update синтаксис
+### Struct update syntax
 
 Това ще премести полетата от оригиналната инстанция
 
@@ -302,21 +220,23 @@ println!("{}, {}", hacker.username, hacker.email);
 println!("{}, {}", user.username, user.email);
 # }
 ```
+
 ---
 
 # Структури
 
 ### Кратък синтаксис за създаване на структури
 
-Често се случва стойността на поле да се задава чрез променлива със същото име.
+Има кратък синтаксис ако стойността на поле се задава чрез променлива със същото име
 
+%%
 ```rust
-# fn main() {
 struct Rectangle {
     width: f64,
     height: f64,
 }
 
+# fn main() {
 let width = 2.0;
 let height = 3.0;
 
@@ -327,30 +247,24 @@ let rect = Rectangle {
 # }
 ```
 
----
-
-# Структури
-
-### Кратък синтаксис за създаване на структури
-
-Често се случва стойността на поле да се задава чрез променлива със същото име. Има кратък синтаксис за това.
-
+%%
 ```rust
-# fn main() {
 struct Rectangle {
     width: f64,
     height: f64,
 }
 
+# fn main() {
 let width = 2.0;
 let height = 3.0;
 
 let rect = Rectangle {
-    width,   // <-
-    height,  // <-
+    width,
+    height,
 };
 # }
 ```
+%%
 
 ---
 
@@ -358,11 +272,7 @@ let rect = Rectangle {
 
 ### Асоциирани функции
 
----
-
-# Методи и асоциирани функции
-
-### Асоциирани функции
+--
 
 ```rust
 # fn main() {}
@@ -383,11 +293,9 @@ impl User {
 ```
 
 --
-- `struct` блока съдържа само полетата на структурата
---
-- методи и функции се добавят в отделен `impl` блок
---
-- разделение между данни и логика
+- разделение между данни и логика:
+    - `struct` блока съдържа само полетата на структурата
+    - методи и функции се добавят в отделен `impl` блок
 
 ---
 
@@ -446,7 +354,7 @@ let user = User::new(String::from("Иванчо"), String::from("ivan40@abv.bg")
 ### Конструктори и деструктори
 
 - в Rust има деструктори
-- дефинират се чрез trait-а `Drop`
+- дефинират се чрез trait-а Drop
 - за тях ще говорим по-късно
 
 ---
@@ -519,7 +427,7 @@ impl Rectangle {
 let rect = Rectangle::new(2.0, 3.0);
 let area = rect.area();
 
-println!("area = {}", area);
+println!("{}", area);
 # }
 ```
 
@@ -534,7 +442,7 @@ println!("area = {}", area);
 
 ### Методи
 
-Могат да се извикват и като асоциирани функции
+Но могат да се извикват и като асоциирана функция
 
 ```rust
 struct Rectangle { width: f64, height: f64 }
@@ -550,7 +458,7 @@ impl Rectangle {
 let rect = Rectangle::new(2.0, 3.0);
 let area = Rectangle::area(&rect);
 
-println!("area = {}", area);
+println!("{}", area);
 # }
 ```
 
@@ -581,35 +489,17 @@ impl Rectangle {
 
 ---
 
-# Tuples
-
-### (преговор)
-
-- `(A, B, C, ...)`
-
-```rust
-# fn main() {
-let tuple: (i32, u32, bool) = (1, 2, false);
-
-println!("{}", tuple.0);
-println!("{}", tuple.1);
-println!("{}", tuple.2);
-# }
-```
-
----
-
 # Tuple structs
 
 Именувани кортежи
 
 ```rust
 # fn main() {
-struct Color(f32, f32, f32);
-struct Point(f32, f32, f32);
+struct Color(i32, i32, i32);
+struct Point(i32, i32, i32);
 
-let black = Color(0.0, 0.0, 0.0);
-let origin = Point(0.0, 0.0, 0.0);
+let black = Color(0, 0, 0);
+let origin = Point(0, 0, 0);
 # }
 ```
 
@@ -617,30 +507,16 @@ let origin = Point(0.0, 0.0, 0.0);
 
 # Tuple structs
 
-Полетата се достъпват с `.0`, `.1`, и т.н., както при нормален tupple
+Полетата се достъпват с `.0`, `.1`, и т.н., както при нормален
 
 ```rust
 # fn main() {
-struct Color(f32, f32, f32);
+struct Color(i32, i32, i32);
 
-let black = Color(0.0, 0.0, 0.0);
+let black = Color(0, 0, 0);
 
 println!("r: {}, g: {}, b: {}", black.0, black.1, black.2);
 # }
-```
-
----
-
-# Tuple structs
-
-### Newtype wrapper
-
-Tuple struct с едно поле често се използва за typesafe wrapper.
-Това се нарича newtype struct или newtype wrapper.
-
-```rust
-#[derive(Debug, Clone, Copy)]
-struct Token(u32);
 ```
 
 ---
@@ -663,7 +539,9 @@ let y = Proton;
 
 # Модули
 
-<img src="images/modules.png">
+<a href="https://www.monkeyuser.com/2018/architecture/" target="_blank">
+    <img height="500px" src="images/modules.png">
+</a>
 
 ---
 
@@ -733,6 +611,12 @@ communicator
     ├── lib.rs
     └── network.rs
 ```
+
+---
+
+# Модули
+
+Можем да дефинираме подмодули и в отделни файлове
 
 ```rust
 # // ignore
@@ -806,6 +690,12 @@ communicator
         └── mod.rs
 ```
 
+---
+
+# Модули
+
+Ако искаме да са в отделни файлове трябва да използваме директории
+
 ```rust
 # // ignore
 // src/lib.rs
@@ -816,49 +706,6 @@ mod network;
 ```rust
 # // ignore
 // src/network/mod.rs
-
-mod client;
-
-fn connect() {
-    // ...
-}
-```
-
-```rust
-// src/network/client.rs
-
-fn connect() {
-    // ...
-}
-# fn main() {}
-```
-
----
-
-# Модули
-
-`network` модула може да го сложим или в `src/network/mod.rs`, или в `src/network.rs`
-
-```sh
-communicator
-├── Cargo.toml
-└── src
-    ├── lib.rs
-    ├── network.rs
-    └── network
-        └── client.rs
-```
-
-```rust
-# // ignore
-// src/lib.rs
-
-mod network;
-```
-
-```rust
-# // ignore
-// src/network.rs
 
 mod client;
 
