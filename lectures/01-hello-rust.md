@@ -399,7 +399,7 @@ fn main() {
 
 ```rust
 fn main() {
-    let x = 5
+    let x = 5;
     let add_x = |a| { a + x };
 
     println!("{}", add_x(10)); // 15
